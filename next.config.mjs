@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const { withCloudflarePages } = require('@cloudflare/next-on-pages/plugin');
+
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -7,8 +9,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    unoptimized: true, // Good, since Cloudflare does not support Next.js image optimization
   },
-}
+};
 
-export default nextConfig
+module.exports = withCloudflarePages(nextConfig);
