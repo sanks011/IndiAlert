@@ -5,8 +5,8 @@
   "description": "IndiAlert: Instantly detect and monitor changes across India using advanced satellite imagery and AI.",
   "author": "IndiAlert Team",
   "scripts": {
-    "build": "next build && next-on-pages",
-  "deploy": "pnpx wrangler pages deploy .vercel/output/static --project-name=indialert",
+    "build": "next build",
+    "deploy": "pnpx wrangler pages deploy .vercel/output/static --project-name=indialert",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start"
@@ -64,7 +64,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.12",
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
