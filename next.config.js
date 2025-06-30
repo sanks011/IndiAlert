@@ -1,5 +1,4 @@
-const { withCloudflarePages } = require('@cloudflare/next-on-pages/plugin');
-
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -12,4 +11,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withCloudflarePages(nextConfig);
+module.exports = nextConfig;
