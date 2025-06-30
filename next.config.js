@@ -1,4 +1,3 @@
-/** @type {import('next').NextConfig} */
 const { withCloudflarePages } = require('@cloudflare/next-on-pages/plugin');
 
 const nextConfig = {
@@ -9,7 +8,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true, // Good, since Cloudflare does not support Next.js image optimization
+    unoptimized: true,
   },
 };
 
