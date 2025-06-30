@@ -14,8 +14,8 @@ export default function Loading() {
           </div>
         </div>
 
-        <h2 className="text-xl font-semibold mb-2">Loading AUTOPARTS</h2>
-        <p className="text-white/60">Preparing your auto parts search experience...</p>
+        <h2 className="text-xl font-semibold mb-2">Loading IndiAlert</h2>
+        <p className="text-white/60">Preparing your satellite change monitoring experience...</p>
       </div>
     </div>
   )

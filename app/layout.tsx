@@ -7,9 +7,9 @@ import { Suspense } from "react"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "AUTOPARTS - Find Auto Parts Instantly",
-  description: "Instant search across thousands of stores in your city powered by artificial intelligence",
-    generator: 'v0.dev'
+  title: "IndiAlert - Satellite Change Monitoring for India",
+  description: "Instant satellite change detection and environmental monitoring across India powered by AI",
+  generator: 'Sankalpa'
 }
 
 export default function RootLayout({
@@ -25,8 +25,8 @@ export default function RootLayout({
             <div className="min-h-screen bg-black text-white flex items-center justify-center">
               <div className="text-center">
                 <div className="w-16 h-16 border-4 border-white/20 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-                <h2 className="text-xl font-semibold mb-2">Loading AUTOPARTS</h2>
-                <p className="text-white/60">Preparing your auto parts search experience...</p>
+                <h2 className="text-xl font-semibold mb-2">Loading IndiAlert</h2>
+                <p className="text-white/60">Preparing your satellite change monitoring experience...</p>
               </div>
             </div>
           }
