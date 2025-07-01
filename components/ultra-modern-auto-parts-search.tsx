@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-// Добавьте после других импортов
 import {
   ArrowRight,
   BarChart,
@@ -13,11 +12,13 @@ import {
   Clock,
   Cpu,
   Layers,
+  LogOut,
   MapPin,
   RefreshCw,
   Satellite,
   Search,
   Sparkles,
+  User,
   X,
   Zap,
 } from "lucide-react"
@@ -25,78 +26,154 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
-import { TracingBeam } from "@/components/tracing-beam"
-import AnimeSphereAnimation from "@/components/anime-sphere-animation"
+import AnimeSphereAnimation from "./anime-sphere-animation"
+import { TracingBeam } from "./tracing-beam"
+import { SignInModal } from "./signin-modal"
+import { SignUpModal } from "./signup-modal"
+import { ForgotPasswordModal } from "./forgot-password-modal"
 
-// Компонент для анимированного placeholder
-function AnimatedPlaceholder({ texts, className }: { texts: string[]; className?: string }) {
-  const [currentTextIndex, setCurrentTextIndex] = useState(0)
-  const [currentText, setCurrentText] = useState("")
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [typingSpeed, setTypingSpeed] = useState(80)
+// Animated placeholder component
+const AnimatedPlaceholder = ({ texts }: { texts: string[] }) => {
+  const [currentIndex, setCurrentIndex] = useState(0)
 
   useEffect(() => {
-    const text = texts[currentTextIndex]
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % texts.length)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [texts.length])
 
-    const timeout = setTimeout(() => {
-      if (!isDeleting) {
-        // Печатаем текст
-        if (currentText.length < text.length) {
-          setCurrentText(text.substring(0, currentText.length + 1))
-          setTypingSpeed(80)
-        } else {
-          // Пауза перед удалением
-          setIsDeleting(true)
-          setTypingSpeed(1000)
-        }
-      } else {
-        // Удаляем текст
-        if (currentText.length > 0) {
-          setCurrentText(text.substring(0, currentText.length - 1))
-          setTypingSpeed(40)
-        } else {
-          // Переход к следующему тексту
-          setIsDeleting(false)
-          setCurrentTextIndex((currentTextIndex + 1) % texts.length)
-          setTypingSpeed(500)
-        }
-      }
-    }, typingSpeed)
-
-    return () => clearTimeout(timeout)
-  }, [currentText, currentTextIndex, isDeleting, texts, typingSpeed])
-
-  return (
-    <span className={className}>
-      {currentText}
-      <span className="animate-pulse">|</span>
-    </span>
-  )
+  return <span>{texts[currentIndex]}</span>
 }
+
+const popularParts = [
+  { name: "Deforestation", count: 1245 },
+  { name: "Water Body Change", count: 876 },
+  { name: "Land Reclamation", count: 543 },
+  { name: "Illegal Encroachment", count: 1892 },
+  { name: "Urban Expansion", count: 765 },
+  { name: "Flood Monitoring", count: 1123 },
+]
+
+// Sample results data
+const sampleSearchResults = [
+  {
+    id: 1,
+    name: "Deforestation detected in Amazon AOI",
+    price: "Included",
+    store: "IndiAlert Engine",
+    distance: "N/A",
+    inStock: true,
+    rating: 4.9,
+    image: "/placeholder.svg?height=100&width=100",
+  },
+  {
+    id: 2,
+    name: "Water body shrinkage in Rajasthan AOI",
+    price: "Included",
+    store: "IndiAlert Engine",
+    distance: "N/A",
+    inStock: true,
+    rating: 4.8,
+    image: "/placeholder.svg?height=100&width=100",
+  },
+  {
+    id: 3,
+    name: "Illegal encroachment near Delhi AOI",
+    price: "Included",
+    store: "IndiAlert Engine",
+    distance: "N/A",
+    inStock: true,
+    rating: 4.7,
+    image: "/placeholder.svg?height=100&width=100",
+  },
+  {
+    id: 4,
+    name: "Land reclamation in Shanghai AOI",
+    price: "Included",
+    store: "IndiAlert Engine",
+    distance: "N/A",
+    inStock: true,
+    rating: 4.8,
+    image: "/placeholder.svg?height=100&width=100",
+  },
+]
 
 export default function UltraModernAutoPartsSearch() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [city, setCity] = useState("India")
   const [searchFocused, setSearchFocused] = useState(false)
-  const [activeSection, setActiveSection] = useState("search")
   const [showResults, setShowResults] = useState(false)
+  const [searchResults, setSearchResults] = useState<any[]>([])
   const [selectedPart, setSelectedPart] = useState<string | null>(null)
+  const [activeSection, setActiveSection] = useState("search")
+  const [isSignInModalOpen, setSignInModalOpen] = useState(false)
+  const [isSignUpModalOpen, setSignUpModalOpen] = useState(false)
+  const [isForgotPasswordModalOpen, setForgotPasswordModalOpen] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [userEmail, setUserEmail] = useState("")
+  const [city] = useState("Global") // Add city state
+
+  // Check for existing authentication on component mount
+  useEffect(() => {
+    const savedAuth = localStorage.getItem('indiAlert_auth')
+    if (savedAuth) {
+      const authData = JSON.parse(savedAuth)
+      setIsAuthenticated(true)
+      setUserEmail(authData.email)
+    }
+  }, [])
 
   const searchInputRef = useRef<HTMLInputElement>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
   const searchSectionRef = useRef<HTMLElement>(null)
   const howSectionRef = useRef<HTMLElement>(null)
 
+  // Sample parts data
+  const popularParts = [
+    { name: "Deforestation", count: 1245 },
+    { name: "Water Body Change", count: 876 },
+    { name: "Land Reclamation", count: 543 },
+    { name: "Illegal Encroachment", count: 1892 },
+    { name: "Urban Expansion", count: 765 },
+    { name: "Flood Monitoring", count: 1123 },
+  ]
+
   // Handle search submission
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (searchQuery.trim()) {
+      setSearchResults(sampleSearchResults)
       setShowResults(true)
       // Scroll to results after a small delay to allow for animation
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth" })
       }, 100)
     }
+  }
+
+  // Handle successful login
+  const handleLoginSuccess = (email: string) => {
+    setIsAuthenticated(true)
+    setUserEmail(email)
+    // Save authentication state to localStorage
+    localStorage.setItem('indiAlert_auth', JSON.stringify({ email, timestamp: Date.now() }))
+    // Automatically redirect to dashboard after successful login
+    window.location.href = '/dashboard'
+  }
+
+  // Handle logout
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    setUserEmail("")
+    // Remove authentication state from localStorage
+    localStorage.removeItem('indiAlert_auth')
+    // Redirect to home or refresh page
+    window.location.reload()
+  }
+
+  // Navigate to dashboard
+  const navigateToDashboard = () => {
+    window.location.href = '/dashboard'
   }
 
   // Handle escape key to close search results
@@ -111,10 +188,7 @@ export default function UltraModernAutoPartsSearch() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [])
 
-  // Focus search input on initial load
-
-
-  // Scroll to section when menu item is clicked
+  // Handle search submission
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId)
 
@@ -153,60 +227,6 @@ export default function UltraModernAutoPartsSearch() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Sample parts data
-  const popularParts = [
-    { name: "Deforestation", count: 1245 },
-    { name: "Water Body Change", count: 876 },
-    { name: "Land Reclamation", count: 543 },
-    { name: "Illegal Encroachment", count: 1892 },
-    { name: "Urban Expansion", count: 765 },
-    { name: "Flood Monitoring", count: 1123 },
-  ]
-
-  // Sample results data
-  const searchResults = [
-    {
-      id: 1,
-      name: "Deforestation detected in Amazon AOI",
-      price: "Included",
-      store: "IndiAlert Engine",
-      distance: "N/A",
-      inStock: true,
-      rating: 4.9,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-    {
-      id: 2,
-      name: "Water body shrinkage in Rajasthan AOI",
-      price: "Included",
-      store: "IndiAlert Engine",
-      distance: "N/A",
-      inStock: true,
-      rating: 4.8,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-    {
-      id: 3,
-      name: "Illegal encroachment near Delhi AOI",
-      price: "Included",
-      store: "IndiAlert Engine",
-      distance: "N/A",
-      inStock: true,
-      rating: 4.7,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-    {
-      id: 4,
-      name: "Land reclamation in Shanghai AOI",
-      price: "Included",
-      store: "IndiAlert Engine",
-      distance: "N/A",
-      inStock: true,
-      rating: 4.8,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-  ]
-
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Background elements */}
@@ -230,6 +250,37 @@ export default function UltraModernAutoPartsSearch() {
           style={{ animationDelay: "1s" }}
         ></div>
       </div>
+
+      {/* Modals */}
+      <SignUpModal
+        isOpen={isSignUpModalOpen}
+        onClose={() => setSignUpModalOpen(false)}
+        onSwitchToSignIn={() => {
+          setSignUpModalOpen(false)
+          setSignInModalOpen(true)
+        }}
+      />
+      <SignInModal
+        isOpen={isSignInModalOpen}
+        onClose={() => setSignInModalOpen(false)}
+        onSwitchToSignUp={() => {
+          setSignInModalOpen(false)
+          setSignUpModalOpen(true)
+        }}
+        onSwitchToForgotPassword={() => {
+          setSignInModalOpen(false)
+          setForgotPasswordModalOpen(true)
+        }}
+        onLoginSuccess={handleLoginSuccess}
+      />
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordModalOpen}
+        onClose={() => setForgotPasswordModalOpen(false)}
+        onBackToSignIn={() => {
+          setForgotPasswordModalOpen(false)
+          setSignInModalOpen(true)
+        }}
+      />
 
       {/* Main content */}
       <div className="relative z-10">
@@ -260,12 +311,42 @@ export default function UltraModernAutoPartsSearch() {
                 How it works
               </Button>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" className="text-white/70 hover:text-white hover:bg-white/5 rounded-full">
-                  Sign In
-                </Button>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4">
-                  Sign Up
-                </Button>
+                {isAuthenticated ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      className="text-white/70 hover:text-white hover:bg-white/5 rounded-full flex items-center gap-2"
+                      onClick={navigateToDashboard}
+                    >
+                      <User className="h-4 w-4" />
+                      Dashboard
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="text-white/70 hover:text-white hover:bg-white/5 rounded-full flex items-center gap-2"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="ghost"
+                      className="text-white/70 hover:text-white hover:bg-white/5 rounded-full"
+                      onClick={() => setSignInModalOpen(true)}
+                    >
+                      Sign In
+                    </Button>
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4"
+                      onClick={() => setSignUpModalOpen(true)}
+                    >
+                      Sign Up
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
