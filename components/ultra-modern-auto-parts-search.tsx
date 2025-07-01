@@ -83,8 +83,6 @@ export default function UltraModernAutoPartsSearch() {
   const resultsRef = useRef<HTMLDivElement>(null)
   const searchSectionRef = useRef<HTMLElement>(null)
   const howSectionRef = useRef<HTMLElement>(null)
-  const pricingSectionRef = useRef<HTMLElement>(null)
-  const businessSectionRef = useRef<HTMLElement>(null)
 
   // Handle search submission
   const handleSearch = (e?: React.FormEvent) => {
@@ -120,8 +118,6 @@ export default function UltraModernAutoPartsSearch() {
     const sectionMap = {
       search: searchSectionRef,
       how: howSectionRef,
-      pricing: pricingSectionRef,
-      business: businessSectionRef,
     }
 
     const sectionRef = sectionMap[sectionId as keyof typeof sectionMap]
@@ -137,8 +133,6 @@ export default function UltraModernAutoPartsSearch() {
       const sections = [
         { id: "search", ref: searchSectionRef },
         { id: "how", ref: howSectionRef },
-        { id: "pricing", ref: pricingSectionRef },
-        { id: "business", ref: businessSectionRef },
       ]
 
       for (const section of sections) {
@@ -262,26 +256,14 @@ export default function UltraModernAutoPartsSearch() {
               >
                 How it works
               </Button>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "text-white/70 hover:text-white hover:bg-white/5 rounded-full",
-                  activeSection === "pricing" && "text-white bg-white/5",
-                )}
-                onClick={() => scrollToSection("pricing")}
-              >
-                Pricing
-              </Button>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "text-white/70 hover:text-white hover:bg-white/5 rounded-full",
-                  activeSection === "business" && "text-white bg-white/5",
-                )}
-                onClick={() => scrollToSection("business")}
-              >
-                For Business
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" className="text-white/70 hover:text-white hover:bg-white/5 rounded-full">
+                  Sign In
+                </Button>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4">
+                  Sign Up
+                </Button>
+              </div>
             </div>
           </div>
         </header>
@@ -571,10 +553,9 @@ export default function UltraModernAutoPartsSearch() {
           {/* How it works section */}
           <section ref={howSectionRef} id="how" className="py-16 px-4 border-t border-white/5">
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-center">How it works</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-center">How IndiAlert Works</h2>
               <p className="text-white/70 text-center max-w-3xl mx-auto mb-16">
-                Our service uses advanced technologies for instant auto parts search across thousands of stores in your
-                city
+                Our platform leverages cutting-edge satellite technology and AI to provide timely and accurate change detection for your Area of Interest (AOI).
               </p>
 
               <div className="grid md:grid-cols-3 gap-8 mb-16 relative">
@@ -591,33 +572,33 @@ export default function UltraModernAutoPartsSearch() {
                 {[
                   {
                     icon: <Search className="h-8 w-8 text-blue-400" />,
-                    title: "Enter your query",
+                    title: "Define Your AOI",
                     description:
-                      "Enter part name or article number, and we'll instantly check availability across thousands of stores",
+                      "Simply select or draw your Area of Interest on the map. Our system supports various formats for easy setup.",
                     benefits: [
-                      "Smart search understands even imprecise queries",
-                      "Automatic city detection",
-                      "Search history for quick access",
+                      "Supports KML, GeoJSON, or manual drawing",
+                      "Monitor areas of any size, from a single building to an entire forest",
+                      "Save and manage multiple AOIs",
                     ],
                   },
                   {
                     icon: <Layers className="h-8 w-8 text-blue-400" />,
-                    title: "Choose the best offer",
-                    description: "Compare prices, location and availability, choose the optimal option",
+                    title: "AI Analyzes Imagery",
+                    description: "Our AI continuously analyzes multi-source satellite data to detect changes within your AOI.",
                     benefits: [
-                      "Sort by price, distance and rating",
-                      "Filter by availability and manufacturer",
-                      "Detailed information about each offer",
+                      "Access to a constellation of high-resolution satellites",
+                      "AI models trained for specific changes like deforestation or construction",
+                      "Historical data analysis to understand trends",
                     ],
                   },
                   {
                     icon: <Zap className="h-8 w-8 text-blue-400" />,
-                    title: "Contact the store",
-                    description: "Call the store directly or request a callback through our service",
+                    title: "Receive Instant Alerts",
+                    description: "Get notified the moment a significant change is detected, with detailed reports and visuals.",
                     benefits: [
-                      "Direct contact without intermediaries",
-                      "Parts reservation capability",
-                      "Route building to store",
+                      "Customizable alert preferences (email, SMS, dashboard)",
+                      "Detailed reports with before-and-after imagery",
+                      "Integrate alerts with your existing workflows via API",
                     ],
                   },
                 ].map((step, index) => (
@@ -652,28 +633,28 @@ export default function UltraModernAutoPartsSearch() {
               </div>
 
               <div className="border border-white/10 rounded-2xl p-8 mb-16 bg-white/5 backdrop-blur-sm">
-                <h3 className="text-2xl font-bold mb-6 text-center">Service advantages</h3>
+                <h3 className="text-2xl font-bold mb-6 text-center">Platform Advantages</h3>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[
                     {
-                      title: "Time saving",
-                      description: "Users save up to 3 hours on average searching for needed parts",
+                      title: "Rapid Monitoring",
+                      description: "Near real-time satellite passes ensure you get information faster than ever before.",
                       icon: <Clock className="h-6 w-6 text-blue-400" />,
                     },
                     {
-                      title: "Money saving",
-                      description: "Price comparison allows saving up to 30% on parts cost",
+                      title: "Cost-Effective",
+                      description: "Monitor vast or remote areas without the need for expensive on-ground teams.",
                       icon: <DollarSign className="h-6 w-6 text-green-400" />,
                     },
                     {
-                      title: "Real-time data",
-                      description: "Availability and price information updates in real-time",
+                      title: "Continuous Updates",
+                      description: "Our data is constantly refreshed, providing you with the most current view of your AOI.",
                       icon: <RefreshCw className="h-6 w-6 text-blue-400" />,
                     },
                     {
-                      title: "Artificial Intelligence",
-                      description: "AI analyzes queries and finds exact matches even with imprecise requests",
+                      title: "High-Precision AI",
+                      description: "Our AI minimizes false positives and accurately identifies a wide range of changes.",
                       icon: <Sparkles className="h-6 w-6 text-blue-400" />,
                     },
                   ].map((benefit, index) => (
@@ -701,29 +682,28 @@ export default function UltraModernAutoPartsSearch() {
 
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <h4 className="text-xl font-semibold text-blue-400">Smart parts search</h4>
+                    <h4 className="text-xl font-semibold text-blue-400">Intelligent Change Analysis</h4>
                     <p className="text-white/70">
-                      Our service uses advanced AI algorithms and MeiliSearch to index millions of parts, allowing you
-                      to find needed parts even with imprecise queries and typos.
+                      Our service uses advanced AI algorithms to analyze satellite imagery, allowing you to detect meaningful changes with high accuracy.
                     </p>
                     <ul className="space-y-2">
                       <li className="flex items-start gap-2">
                         <div className="w-5 h-5 rounded-full bg-blue-500/20 flex-shrink-0 flex items-center justify-center mt-0.5">
                           <Check className="h-3 w-3 text-blue-400" />
                         </div>
-                        <p className="text-sm text-white/70">Understands natural language queries</p>
+                        <p className="text-sm text-white/70">Identifies construction, deforestation, and more</p>
                       </li>
                       <li className="flex items-start gap-2">
                         <div className="w-5 h-5 rounded-full bg-blue-500/20 flex-shrink-0 flex items-center justify-center mt-0.5">
                           <Check className="h-3 w-3 text-blue-400" />
                         </div>
-                        <p className="text-sm text-white/70">Recognizes part analogs and substitutes</p>
+                        <p className="text-sm text-white/70">Filters out insignificant changes like shadows or seasonal shifts</p>
                       </li>
                       <li className="flex items-start gap-2">
                         <div className="w-5 h-5 rounded-full bg-blue-500/20 flex-shrink-0 flex items-center justify-center mt-0.5">
                           <Check className="h-3 w-3 text-blue-400" />
                         </div>
-                        <p className="text-sm text-white/70">Considers compatibility with your vehicle</p>
+                        <p className="text-sm text-white/70">Quantifies the scale and impact of detected changes</p>
                       </li>
                     </ul>
                   </div>
@@ -749,25 +729,24 @@ export default function UltraModernAutoPartsSearch() {
                             />
                           </svg>
                         </div>
-                        <h4 className="text-xl font-semibold">MeiliSearch with AI</h4>
+                        <h4 className="text-xl font-semibold">AI-Powered Analysis</h4>
                       </div>
                       <p className="text-white/70 mb-4">
-                        We use MeiliSearch with AI integration to create the fastest and most accurate auto parts search
-                        system.
+                        We use a suite of AI models to provide the fastest and most accurate change detection system available.
                       </p>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-white/50">Search speed</span>
-                        <span className="text-blue-400 font-medium">{"<"} 50 ms</span>
+                        <span className="text-white/50">Detection Speed</span>
+                        <span className="text-blue-400 font-medium">As fast as 2 hours</span>
                       </div>
                       <div className="w-full h-1.5 bg-white/10 rounded-full mt-1 mb-3">
-                        <div className="h-full bg-blue-500 rounded-full" style={{ width: "95%" }}></div>
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: "90%" }}></div>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-white/50">Result accuracy</span>
-                        <span className="text-blue-400 font-medium">99.7%</span>
+                        <span className="text-blue-400 font-medium">99.2%</span>
                       </div>
                       <div className="w-full h-1.5 bg-white/10 rounded-full mt-1">
-                        <div className="h-full bg-blue-500 rounded-full" style={{ width: "97%" }}></div>
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: "99.2%" }}></div>
                       </div>
                     </div>
                   </div>
@@ -798,255 +777,12 @@ export default function UltraModernAutoPartsSearch() {
               </div>
 
               <div className="text-center">
-                <h3 className="text-2xl font-bold mb-6">Ready to find parts?</h3>
+                <h3 className="text-2xl font-bold mb-6">Ready to start monitoring?</h3>
                 <Button
                   className="rounded-full bg-blue-600 hover:bg-blue-700 h-12 px-8 text-lg"
                   onClick={() => scrollToSection("search")}
                 >
-                  Start search
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
-            </div>
-          </section>
-
-          {/* Pricing section */}
-          <section ref={pricingSectionRef} id="pricing" className="py-16 px-4 border-t border-white/5">
-            <div className="max-w-6xl mx-auto">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-center">Pricing</h2>
-              <p className="text-white/70 text-center max-w-3xl mx-auto mb-16">
-                Choose the right plan for auto parts search. Free plan available for personal use
-              </p>
-
-              <div className="grid md:grid-cols-3 gap-8 mb-16">
-                {[
-                  {
-                    name: "Basic",
-                    price: "Free",
-                    description: "For personal use",
-                    features: [
-                      "Search parts by name and article number",
-                      "View prices and availability",
-                      "Store contacts",
-                      "5 searches per day",
-                    ],
-                    cta: "Start free",
-                    popular: false,
-                    color: "from-blue-500/20 to-blue-500/5",
-                  },
-                  {
-                    name: "Standard",
-                    price: "299 $/month",
-                    description: "For active car owners",
-                    features: [
-                      "All basic plan features",
-                      "Unlimited searches",
-                      "Advanced search filters",
-                      "Search history",
-                      "Save favorite parts",
-                      "Advanced AI search capabilities",
-                    ],
-                    cta: "Choose plan",
-                    popular: true,
-                    color: "from-blue-500/40 via-blue-500/30 to-blue-500/40",
-                  },
-                  {
-                    name: "Premium",
-                    price: "599 $/month",
-                    description: "For professionals",
-                    features: [
-                      "All standard plan features",
-                      "Priority support",
-                      "Price drop notifications",
-                      "Part analogs",
-                      "Export search results",
-                      "API access",
-                      "AI-powered personalized recommendations",
-                    ],
-                    cta: "Choose plan",
-                    popular: false,
-                    color: "from-blue-500/20 to-blue-500/5",
-                  },
-                ].map((plan, index) => (
-                  <div key={index} className="relative group">
-                    {plan.popular && (
-                      <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-sm font-medium px-4 py-1 rounded-full">
-                        Popular choice
-                      </div>
-                    )}
-
-                    <div className="absolute -inset-px bg-gradient-to-r from-blue-500/0 via-blue-500/0 to-blue-500/0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
-
-                    <div
-                      className={cn(
-                        "relative border border-white/10 rounded-2xl p-6 h-full transition-all duration-300",
-                        "group-hover:border-blue-500/50 group-hover:bg-white/5",
-                        plan.popular ? "border-blue-500/50 bg-white/5" : "",
-                      )}
-                    >
-                      <div
-                        className={cn("absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r", plan.color)}
-                      ></div>
-
-                      <div className="pt-6">
-                        <h3 className="text-2xl font-bold mb-1">{plan.name}</h3>
-                        <p className="text-white/60 mb-4">{plan.description}</p>
-
-                        <div className="flex items-baseline mb-6">
-                          <span className="text-3xl font-bold">{plan.price}</span>
-                        </div>
-
-                        <div className="space-y-3 mb-8">
-                          {plan.features.map((feature, i) => (
-                            <div key={i} className="flex items-start gap-2">
-                              <div className="w-5 h-5 rounded-full bg-blue-500/20 flex-shrink-0 flex items-center justify-center mt-0.5">
-                                <Check className="h-3 w-3 text-blue-400" />
-                              </div>
-                              <p className="text-sm text-white/70">{feature}</p>
-                            </div>
-                          ))}
-                        </div>
-
-                        <Button
-                          className={cn(
-                            "w-full rounded-xl h-12",
-                            plan.popular
-                              ? "bg-blue-600 hover:bg-blue-700 text-white"
-                              : "bg-white/10 hover:bg-white/20 text-white",
-                          )}
-                        >
-                          {plan.cta}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border border-white/10 rounded-2xl p-8 bg-white/5 backdrop-blur-sm">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div>
-                    <h3 className="text-2xl font-bold mb-2">Need a custom plan?</h3>
-                    <p className="text-white/70">Contact us to discuss special terms</p>
-                  </div>
-                  <Button className="rounded-full bg-blue-600 hover:bg-blue-700 h-12 px-8">Contact us</Button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* For business section */}
-          <section ref={businessSectionRef} id="business" className="py-16 px-4 border-t border-white/5">
-            <div className="max-w-6xl mx-auto">
-              <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center">For Business</h2>
-
-              <div className="grid md:grid-cols-2 gap-12 mb-16">
-                <div>
-                  <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                    <Sparkles className="h-6 w-6 text-blue-400" />
-                    Connection benefits
-                  </h3>
-
-                  <div className="space-y-6">
-                    {[
-                      {
-                        title: "New customers",
-                        description: "Attract customers who are specifically looking for parts in your city",
-                      },
-                      {
-                        title: "Automatic synchronization",
-                        description: "Integration with your accounting system to update availability and price data",
-                      },
-                      {
-                        title: "Analytics and statistics",
-                        description: "Get data on popular queries and demand in your region",
-                      },
-                      {
-                        title: "Easy connection",
-                        description: "Free connection and technical support at all stages",
-                      },
-                    ].map((item, index) => (
-                      <div
-                        key={index}
-                        className="border border-white/10 rounded-xl p-4 hover:border-blue-500/50 hover:bg-white/5 transition-all duration-300"
-                      >
-                        <h4 className="font-bold mb-2">{item.title}</h4>
-                        <p className="text-white/70">{item.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="relative">
-                    <div className="absolute -inset-px bg-gradient-to-r from-blue-500/20 via-blue-500/20 to-blue-500/20 rounded-2xl blur-md"></div>
-
-                    <div className="relative border border-white/10 rounded-2xl p-6 bg-black/50 backdrop-blur-sm">
-                      <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                        <Compass className="h-6 w-6 text-blue-400" />
-                        Submit application
-                      </h3>
-
-                      <form className="space-y-4">
-                        <div>
-                          <label className="block text-sm text-white/70 mb-1">Company name</label>
-                          <Input className="bg-white/5 border-white/10 rounded-lg focus:border-blue-500 focus:ring-blue-500 text-white" />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm text-white/70 mb-1">Email</label>
-                          <Input
-                            type="email"
-                            className="bg-white/5 border-white/10 rounded-lg focus:border-blue-500 focus:ring-blue-500 text-white"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm text-white/70 mb-1">Phone</label>
-                          <Input
-                            type="tel"
-                            className="bg-white/5 border-white/10 rounded-lg focus:border-blue-500 focus:ring-blue-500 text-white"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm text-white/70 mb-1">City</label>
-                          <Input className="bg-white/5 border-white/10 rounded-lg focus:border-blue-500 focus:ring-blue-500 text-white" />
-                        </div>
-
-                        <Button type="submit" className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 h-12">
-                          Submit application
-                        </Button>
-                      </form>
-                    </div>
-                  </div>
-
-                  <div className="mt-8 p-6 border border-white/10 rounded-2xl">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-bold">Connection statistics</h4>
-                      <div className="text-sm text-white/50">Average indicators</div>
-                    </div>
-
-                    <div className="space-y-4">
-                      {[
-                        { label: "Customer growth", value: "+40%" },
-                        { label: "Sales increase", value: "+35%" },
-                        { label: "Inventory optimization", value: "-20%" },
-                      ].map((stat, index) => (
-                        <div key={index} className="flex justify-between items-center">
-                          <span className="text-white/70">{stat.label}</span>
-                          <span className="font-bold text-blue-400">{stat.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <h3 className="text-2xl font-bold mb-6">Join our store network</h3>
-                <Button className="rounded-full bg-blue-600 hover:bg-blue-700 h-12 px-8 text-lg">
-                  Become a partner
+                  Join the network
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
@@ -1055,27 +791,12 @@ export default function UltraModernAutoPartsSearch() {
         </TracingBeam>
 
         {/* Footer */}
-        <footer className="border-t border-white/5 py-8">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <span className="font-bold">IndiAlert</span>
-
-              <div className="flex gap-6">
-                <a href="#" className="text-white/50 hover:text-white transition-colors">
-                  About service
-                </a>
-                <a href="#" className="text-white/50 hover:text-white transition-colors">
-                  Terms of use
-                </a>
-                <a href="#" className="text-white/50 hover:text-white transition-colors">
-                  Privacy
-                </a>
-                <a href="#" className="text-white/50 hover:text-white transition-colors">
-                  Contacts
-                </a>
-              </div>
-
-              <div className="text-white/50">© {new Date().getFullYear()} IndiAlert</div>
+        <footer className="border-t border-white/5 py-8 px-4">
+          <div className="container mx-auto text-center text-white/50">
+            <p>&copy; {new Date().getFullYear()} IndiAlert. All rights reserved.</p>
+            <div className="flex justify-center gap-4 mt-4">
+              <a href="#" className="hover:text-white">Privacy Policy</a>
+              <a href="#" className="hover:text-white">Terms of Service</a>
             </div>
           </div>
         </footer>
