@@ -5,18 +5,21 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 // Добавьте после других импортов
 import {
-  Search,
   ArrowRight,
-  X,
-  ChevronRight,
-  Sparkles,
-  Zap,
-  Layers,
-  Compass,
-  Clock,
-  DollarSign,
-  RefreshCw,
+  BarChart,
+  Bell,
   Check,
+  ChevronRight,
+  Clock,
+  Cpu,
+  Layers,
+  MapPin,
+  RefreshCw,
+  Satellite,
+  Search,
+  Sparkles,
+  X,
+  Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -553,9 +556,10 @@ export default function UltraModernAutoPartsSearch() {
           {/* How it works section */}
           <section ref={howSectionRef} id="how" className="py-16 px-4 border-t border-white/5">
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-center">How IndiAlert Works</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-center">How It Works</h2>
               <p className="text-white/70 text-center max-w-3xl mx-auto mb-16">
-                Our platform leverages cutting-edge satellite technology and AI to provide timely and accurate change detection for your Area of Interest (AOI).
+                Monitor your areas of interest in three simple steps. Our automated platform handles the complexity of
+                satellite data analysis, delivering actionable alerts directly to you.
               </p>
 
               <div className="grid md:grid-cols-3 gap-8 mb-16 relative">
@@ -571,34 +575,35 @@ export default function UltraModernAutoPartsSearch() {
 
                 {[
                   {
-                    icon: <Search className="h-8 w-8 text-blue-400" />,
-                    title: "Define Your AOI",
+                    icon: <MapPin className="h-8 w-8 text-blue-400" />,
+                    title: "1. Define Your AOI",
                     description:
-                      "Simply select or draw your Area of Interest on the map. Our system supports various formats for easy setup.",
+                      "Simply define your Area of Interest (AOI) on the map. You can draw a polygon, upload a file, or use an address.",
                     benefits: [
-                      "Supports KML, GeoJSON, or manual drawing",
-                      "Monitor areas of any size, from a single building to an entire forest",
+                      "Flexible AOI definition tools",
+                      "Support for various file formats (KML, GeoJSON)",
                       "Save and manage multiple AOIs",
                     ],
                   },
                   {
-                    icon: <Layers className="h-8 w-8 text-blue-400" />,
-                    title: "AI Analyzes Imagery",
-                    description: "Our AI continuously analyzes multi-source satellite data to detect changes within your AOI.",
+                    icon: <Cpu className="h-8 w-8 text-blue-400" />,
+                    title: "2. AI Analyzes Imagery",
+                    description:
+                      "Our platform automatically sources and analyzes multi-source satellite imagery for your AOI.",
                     benefits: [
-                      "Access to a constellation of high-resolution satellites",
-                      "AI models trained for specific changes like deforestation or construction",
-                      "Historical data analysis to understand trends",
+                      "Access to multiple satellite constellations",
+                      "AI algorithms detect significant changes",
+                      "Filters out noise and seasonal variations",
                     ],
                   },
                   {
-                    icon: <Zap className="h-8 w-8 text-blue-400" />,
-                    title: "Receive Instant Alerts",
-                    description: "Get notified the moment a significant change is detected, with detailed reports and visuals.",
+                    icon: <Bell className="h-8 w-8 text-blue-400" />,
+                    title: "3. Receive Instant Alerts",
+                    description: "Get notified via email or dashboard alerts the moment a relevant change is detected.",
                     benefits: [
-                      "Customizable alert preferences (email, SMS, dashboard)",
-                      "Detailed reports with before-and-after imagery",
-                      "Integrate alerts with your existing workflows via API",
+                      "Customizable alert preferences",
+                      "Detailed reports with before/after imagery",
+                      "Integrate alerts with your existing workflows",
                     ],
                   },
                 ].map((step, index) => (
@@ -638,23 +643,23 @@ export default function UltraModernAutoPartsSearch() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[
                     {
-                      title: "Rapid Monitoring",
-                      description: "Near real-time satellite passes ensure you get information faster than ever before.",
-                      icon: <Clock className="h-6 w-6 text-blue-400" />,
-                    },
-                    {
-                      title: "Cost-Effective",
-                      description: "Monitor vast or remote areas without the need for expensive on-ground teams.",
-                      icon: <DollarSign className="h-6 w-6 text-green-400" />,
-                    },
-                    {
-                      title: "Continuous Updates",
-                      description: "Our data is constantly refreshed, providing you with the most current view of your AOI.",
+                      title: "Automated Monitoring",
+                      description: "Set your AOI once and let our AI do the continuous work, 24/7.",
                       icon: <RefreshCw className="h-6 w-6 text-blue-400" />,
                     },
                     {
-                      title: "High-Precision AI",
-                      description: "Our AI minimizes false positives and accurately identifies a wide range of changes.",
+                      title: "High-Res Imagery",
+                      description: "Access to a constellation of high-resolution satellites for detailed analysis.",
+                      icon: <Satellite className="h-6 w-6 text-green-400" />,
+                    },
+                    {
+                      title: "Actionable Insights",
+                      description: "Receive clear alerts that highlight what has changed, where, and when.",
+                      icon: <BarChart className="h-6 w-6 text-blue-400" />,
+                    },
+                    {
+                      title: "Powered by AI",
+                      description: "Our algorithms filter out noise to identify meaningful changes.",
                       icon: <Sparkles className="h-6 w-6 text-blue-400" />,
                     },
                   ].map((benefit, index) => (
@@ -677,33 +682,34 @@ export default function UltraModernAutoPartsSearch() {
               <div className="border border-white/10 rounded-2xl p-8 mb-16 bg-gradient-to-br from-black to-blue-950/30 backdrop-blur-sm">
                 <h3 className="text-2xl font-bold mb-6 text-center flex items-center justify-center gap-2">
                   <Sparkles className="h-6 w-6 text-blue-400" />
-                  AI at the Core of Change Detection
+                  AI-Powered Analysis at its Core
                 </h3>
 
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <h4 className="text-xl font-semibold text-blue-400">Intelligent Change Analysis</h4>
+                    <h4 className="text-xl font-semibold text-blue-400">Intelligent Change Detection</h4>
                     <p className="text-white/70">
-                      Our service uses advanced AI algorithms to analyze satellite imagery, allowing you to detect meaningful changes with high accuracy.
+                      Our service uses advanced AI algorithms trained on petabytes of satellite data to identify
+                      meaningful changes on the Earth's surface, distinguishing them from natural variations.
                     </p>
                     <ul className="space-y-2">
                       <li className="flex items-start gap-2">
                         <div className="w-5 h-5 rounded-full bg-blue-500/20 flex-shrink-0 flex items-center justify-center mt-0.5">
                           <Check className="h-3 w-3 text-blue-400" />
                         </div>
-                        <p className="text-sm text-white/70">Identifies construction, deforestation, and more</p>
+                        <p className="text-sm text-white/70">Detects deforestation and urban sprawl</p>
                       </li>
                       <li className="flex items-start gap-2">
                         <div className="w-5 h-5 rounded-full bg-blue-500/20 flex-shrink-0 flex items-center justify-center mt-0.5">
                           <Check className="h-3 w-3 text-blue-400" />
                         </div>
-                        <p className="text-sm text-white/70">Filters out insignificant changes like shadows or seasonal shifts</p>
+                        <p className="text-sm text-white/70">Monitors agricultural and water body changes</p>
                       </li>
                       <li className="flex items-start gap-2">
                         <div className="w-5 h-5 rounded-full bg-blue-500/20 flex-shrink-0 flex items-center justify-center mt-0.5">
                           <Check className="h-3 w-3 text-blue-400" />
                         </div>
-                        <p className="text-sm text-white/70">Quantifies the scale and impact of detected changes</p>
+                        <p className="text-sm text-white/70">Identifies new infrastructure and construction</p>
                       </li>
                     </ul>
                   </div>
@@ -713,40 +719,27 @@ export default function UltraModernAutoPartsSearch() {
                     <div className="relative border border-white/10 rounded-2xl p-6 h-full">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                          <svg
-                            className="w-6 h-6 text-blue-400"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z"
-                              fill="currentColor"
-                            />
-                            <path
-                              d="M12 17C14.7614 17 17 14.7614 17 12C17 9.23858 14.7614 7 12 7C9.23858 7 7 9.23858 7 12C7 14.7614 9.23858 17 12 17Z"
-                              fill="currentColor"
-                            />
-                          </svg>
+                          <Cpu className="w-6 h-6 text-blue-400" />
                         </div>
-                        <h4 className="text-xl font-semibold">AI-Powered Analysis</h4>
+                        <h4 className="text-xl font-semibold">Data Processing Engine</h4>
                       </div>
                       <p className="text-white/70 mb-4">
-                        We use a suite of AI models to provide the fastest and most accurate change detection system available.
+                        Our custom data pipeline processes terabytes of imagery daily to deliver timely and accurate
+                        insights.
                       </p>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-white/50">Detection Speed</span>
-                        <span className="text-blue-400 font-medium">As fast as 2 hours</span>
+                        <span className="text-white/50">Analysis Speed</span>
+                        <span className="text-blue-400 font-medium">Up to 10,000 km²/hr</span>
                       </div>
                       <div className="w-full h-1.5 bg-white/10 rounded-full mt-1 mb-3">
                         <div className="h-full bg-blue-500 rounded-full" style={{ width: "90%" }}></div>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-white/50">Result accuracy</span>
-                        <span className="text-blue-400 font-medium">99.2%</span>
+                        <span className="text-white/50">Detection Accuracy</span>
+                        <span className="text-blue-400 font-medium">98.2%</span>
                       </div>
                       <div className="w-full h-1.5 bg-white/10 rounded-full mt-1">
-                        <div className="h-full bg-blue-500 rounded-full" style={{ width: "99.2%" }}></div>
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: "98.2%" }}></div>
                       </div>
                     </div>
                   </div>
