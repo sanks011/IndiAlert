@@ -563,16 +563,6 @@ export default function UltraModernAutoPartsSearch() {
               </p>
 
               <div className="grid md:grid-cols-3 gap-8 mb-16 relative">
-                {/* Connection line for desktop */}
-                <div className="hidden md:block absolute top-24 left-[calc(16.67%+8px)] right-[calc(16.67%+8px)] h-0.5">
-                  <div className="h-full bg-white/10 relative">
-                    {/* Точки на линии, соответствующие центрам блоков */}
-                    <div className="absolute top-1/2 left-1/6 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full"></div>
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full"></div>
-                    <div className="absolute top-1/2 left-5/6 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full"></div>
-                  </div>
-                </div>
-
                 {[
                   {
                     icon: <MapPin className="h-8 w-8 text-blue-400" />,
