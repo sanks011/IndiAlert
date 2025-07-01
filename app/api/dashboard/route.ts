@@ -16,24 +16,40 @@ export async function GET(request: NextRequest) {
 
     // Get user's AOIs
     const aois = await AOI.find({ userId }).sort({ createdAt: -1 })
+    const aoiIds = aois.map(aoi => aoi._id)
     
     // Get user's alerts
-    const alerts = await Alert.find({ userId }).sort({ createdAt: -1 }).limit(10)
+    const alerts = await Alert.find({ aoiId: { $in: aoiIds } }).sort({ createdAt: -1 }).limit(10)
     
     // Calculate stats
     const totalAOIs = aois.length
     const activeAOIs = aois.filter(aoi => aoi.status === 'active').length
-    const totalAlerts = await Alert.countDocuments({ userId })
-    const highPriorityAlerts = await Alert.countDocuments({ userId, severity: 'high' })
-    const mediumPriorityAlerts = await Alert.countDocuments({ userId, severity: 'medium' })
-    const lowPriorityAlerts = await Alert.countDocuments({ userId, severity: 'low' })
-    const newAlerts = await Alert.countDocuments({ userId, status: 'new' })
+    const totalAlerts = await Alert.countDocuments({ aoiId: { $in: aoiIds } })
+    const highPriorityAlerts = await Alert.countDocuments({ aoiId: { $in: aoiIds }, severity: 'high' })
+    const mediumPriorityAlerts = await Alert.countDocuments({ aoiId: { $in: aoiIds }, severity: 'medium' })
+    const lowPriorityAlerts = await Alert.countDocuments({ aoiId: { $in: aoiIds }, severity: 'low' })
+    
+    // Calculate new alerts from this week
+    const oneWeekAgo = new Date()
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+    const newAlertsThisWeek = await Alert.countDocuments({ 
+      aoiId: { $in: aoiIds }, 
+      createdAt: { $gte: oneWeekAgo } 
+    })
+    
+    // Calculate detection accuracy from alert confidence
+    const avgConfidenceResult = await Alert.aggregate([
+      { $match: { aoiId: { $in: aoiIds } } },
+      { $group: { _id: null, avgConfidence: { $avg: "$confidence" } } }
+    ])
+    const detectionAccuracy = avgConfidenceResult.length > 0 ? 
+      Math.round(avgConfidenceResult[0].avgConfidence * 100) : 0
     
     // Calculate total area monitored
     const totalAreaMonitored = aois.reduce((sum, aoi) => sum + (aoi.area || 0), 0)
 
     // Get recent alerts with AOI details
-    const recentAlertsWithAOI = await Alert.find({ userId })
+    const recentAlertsWithAOI = await Alert.find({ aoiId: { $in: aoiIds } })
       .populate('aoiId', 'name')
       .sort({ createdAt: -1 })
       .limit(5)
@@ -42,9 +58,9 @@ export async function GET(request: NextRequest) {
       stats: {
         activeAOIs,
         totalAlerts,
-        areaMonitored: Math.round(totalAreaMonitored),
-        detectionAccuracy: 98.2, // This would come from your AI model metrics
-        newAlertsThisWeek: newAlerts
+        areaMonitored: Math.round(totalAreaMonitored * 100) / 100,
+        detectionAccuracy,
+        newAlertsThisWeek
       },
       aois: aois.map(aoi => ({
         id: aoi._id,

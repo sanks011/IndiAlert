@@ -3,6 +3,23 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { 
+  LineChart, 
+  Line, 
+  AreaChart, 
+  Area, 
+  BarChart, 
+  Bar, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from 'recharts'
 import {
   AlertTriangle,
   BarChart3,
@@ -13,6 +30,9 @@ import {
   Home,
   Map,
   MapPin,
+  Play,
+  Pause,
+  Trash2,
   Plus,
   Satellite,
   Settings,
@@ -21,6 +41,59 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import AOICreationModal from "@/components/aoi-creation-modal"
+
+interface AnalyticsData {
+  summary: {
+    totalAOIs: number
+    activeAOIs: number
+    pausedAOIs: number
+    totalAreaMonitored: number
+    totalAlerts: number
+    avgDetectionAccuracy: number
+  }
+  charts: {
+    alertTrends: Array<{
+      date: string
+      high: number
+      medium: number
+      low: number
+      total: number
+    }>
+    alertTypeDistribution: Array<{
+      type: string
+      count: number
+      label: string
+    }>
+    severityDistribution: Array<{
+      severity: string
+      count: number
+    }>
+    monthlyStats: Array<{
+      month: string
+      totalAlerts: number
+      highSeverity: number
+      mediumSeverity: number
+      lowSeverity: number
+      avgConfidence: number
+    }>
+    accuracyTrends: Array<{
+      date: string
+      accuracy: number
+      totalAlerts: number
+      falsePositiveRate: number
+    }>
+    aoiPerformance: Array<{
+      aoiId: string
+      name: string
+      alertType: string
+      area: number
+      status: string
+      totalAlerts: number
+      highSeverityAlerts: number
+      avgConfidence: number
+    }>
+  }
+}
 
 interface DashboardData {
   stats: {
@@ -66,10 +139,12 @@ interface DashboardData {
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showAOIModal, setShowAOIModal] = useState(false)
   const [creatingAOI, setCreatingAOI] = useState(false)
+  const [updatingAOI, setUpdatingAOI] = useState<string | null>(null)
 
   // Get user ID from localStorage (you might want to use a proper auth context)
   const getUserId = () => {
@@ -105,13 +180,22 @@ export default function Dashboard() {
         return
       }
 
-      const response = await fetch(`/api/dashboard?userId=${userId}`)
-      if (!response.ok) {
+      // Fetch dashboard data
+      const dashboardResponse = await fetch(`/api/dashboard?userId=${userId}`)
+      if (!dashboardResponse.ok) {
         throw new Error('Failed to fetch dashboard data')
       }
+      const dashboardData = await dashboardResponse.json()
+      setDashboardData(dashboardData)
 
-      const data = await response.json()
-      setDashboardData(data)
+      // Fetch analytics data
+      const analyticsResponse = await fetch(`/api/analytics?userId=${userId}&timeRange=30`)
+      if (!analyticsResponse.ok) {
+        throw new Error('Failed to fetch analytics data')
+      }
+      const analyticsData = await analyticsResponse.json()
+      setAnalyticsData(analyticsData)
+
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
@@ -150,18 +234,83 @@ export default function Dashboard() {
       
       // Refresh dashboard data
       await fetchDashboardData()
-      
-      // Close modal
       setShowAOIModal(false)
-      
-      // Show success message (you can implement a toast notification here)
-      alert('AOI created successfully! Monitoring has started.')
-      
     } catch (err) {
-      console.error('AOI creation error:', err)
-      alert(err instanceof Error ? err.message : 'Failed to create AOI')
+      console.error('Error creating AOI:', err)
+      setError(err instanceof Error ? err.message : 'Failed to create AOI')
     } finally {
       setCreatingAOI(false)
+    }
+  }
+
+  // Handle AOI status changes (start/stop monitoring)
+  const handleAOIStatusChange = async (aoiId: string, newStatus: 'active' | 'paused') => {
+    try {
+      setUpdatingAOI(aoiId)
+      const userId = getUserId()
+      
+      if (!userId) {
+        throw new Error('Please log in to update AOI')
+      }
+
+      const response = await fetch(`/api/aoi/${aoiId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          status: newStatus
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update AOI status')
+      }
+
+      // Refresh dashboard data
+      await fetchDashboardData()
+    } catch (err) {
+      console.error('Error updating AOI status:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update AOI status')
+    } finally {
+      setUpdatingAOI(null)
+    }
+  }
+
+  // Handle AOI deletion
+  const handleDeleteAOI = async (aoiId: string, aoiName: string) => {
+    if (!confirm(`Are you sure you want to delete "${aoiName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setUpdatingAOI(aoiId)
+      const userId = getUserId()
+      
+      if (!userId) {
+        throw new Error('Please log in to delete AOI')
+      }
+
+      const response = await fetch(`/api/aoi/${aoiId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete AOI')
+      }
+
+      // Refresh dashboard data
+      await fetchDashboardData()
+    } catch (err) {
+      console.error('Error deleting AOI:', err)
+      setError(err instanceof Error ? err.message : 'Failed to delete AOI')
+    } finally {
+      setUpdatingAOI(null)
     }
   }
 
@@ -409,10 +558,18 @@ export default function Dashboard() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {dashboardData?.aois.map((aoi) => (
-                  <Card key={aoi.id} className="bg-[#F0EDCF]/5 border-[#0B60B0]/30 hover:border-[#40A2D8]/50 transition-all duration-200 hover:bg-[#F0EDCF]/10 hover:shadow-lg">
+                  <Card key={aoi.id} className={cn(
+                    "bg-[#F0EDCF]/5 border-[#0B60B0]/30 hover:border-[#40A2D8]/50 transition-all duration-200 hover:bg-[#F0EDCF]/10 hover:shadow-lg",
+                    updatingAOI === aoi.id && "opacity-75 pointer-events-none"
+                  )}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg text-[#F0EDCF]">{aoi.name}</CardTitle>
+                        <CardTitle className="text-lg text-[#F0EDCF] flex items-center gap-2">
+                          {aoi.name}
+                          {updatingAOI === aoi.id && (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0B60B0]"></div>
+                          )}
+                        </CardTitle>
                         <span
                           className={cn(
                             "px-2 py-1 rounded-full text-xs font-medium capitalize",
@@ -445,14 +602,57 @@ export default function Dashboard() {
                             {new Date(aoi.lastUpdate).toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="flex gap-2 mt-4">
+                        
+                        {/* Alert Management Controls */}
+                        <div className="border-t border-[#0B60B0]/20 pt-3 mt-3">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-[#F0EDCF]">Alert Status</span>
+                            <div className="flex items-center gap-2">
+                              {aoi.status === 'active' ? (
+                                <Button
+                                  onClick={() => handleAOIStatusChange(aoi.id, 'paused')}
+                                  disabled={updatingAOI === aoi.id}
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all duration-200"
+                                >
+                                  <Pause className="h-3 w-3 mr-1" />
+                                  Pause
+                                </Button>
+                              ) : (
+                                <Button
+                                  onClick={() => handleAOIStatusChange(aoi.id, 'active')}
+                                  disabled={updatingAOI === aoi.id}
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-green-500 text-green-500 hover:bg-green-500 hover:text-black transition-all duration-200"
+                                >
+                                  <Play className="h-3 w-3 mr-1" />
+                                  Start
+                                </Button>
+                              )}
+                              <Button
+                                onClick={() => handleDeleteAOI(aoi.id, aoi.name)}
+                                disabled={updatingAOI === aoi.id}
+                                size="sm"
+                                variant="outline"
+                                className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200"
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2 mt-3">
                           <Button 
                             variant="outline" 
                             size="sm" 
                             className="flex-1 border-[#0B60B0] text-[#0B60B0] hover:bg-[#0B60B0] hover:text-[#F0EDCF] transition-all duration-200"
                           >
                             <Eye className="h-4 w-4 mr-2" />
-                            View
+                            View Details
                           </Button>
                           <Button 
                             variant="outline" 
@@ -614,35 +814,313 @@ export default function Dashboard() {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-[#F0EDCF]">Analytics & Reports</h2>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30 hover:border-[#40A2D8]/50 transition-all duration-200 hover:bg-[#F0EDCF]/10">
-                <CardHeader>
-                  <CardTitle className="text-[#F0EDCF]">Change Detection Over Time</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64 flex items-center justify-center text-[#F0EDCF]/50 border border-[#0B60B0]/20 rounded-lg bg-[#F0EDCF]/3">
-                    <div className="text-center">
-                      <BarChart3 className="h-12 w-12 mx-auto mb-4 text-[#40A2D8]" />
-                      <p>Chart placeholder - Analytics coming soon</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {!analyticsData ? (
+              <div className="text-center py-12 text-[#F0EDCF]/50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0B60B0] mx-auto mb-4"></div>
+                <p>Loading analytics data...</p>
+              </div>
+            ) : (
+              <>
+                {/* Summary Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30">
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-[#40A2D8]">
+                          {analyticsData.summary?.totalAlerts || 0}
+                        </p>
+                        <p className="text-sm text-[#F0EDCF]/70">Total Alerts</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30">
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-[#40A2D8]">
+                          {analyticsData.aoiPerformance?.length || 0}
+                        </p>
+                        <p className="text-sm text-[#F0EDCF]/70">Active AOIs</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30">
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-[#40A2D8]">
+                          {analyticsData.summary?.totalAreaMonitored?.toFixed(2) || 0}
+                        </p>
+                        <p className="text-sm text-[#F0EDCF]/70">Area Monitored (km²)</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30">
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-[#40A2D8]">
+                          {analyticsData.summary?.avgDetectionAccuracy || 0}%
+                        </p>
+                        <p className="text-sm text-[#F0EDCF]/70">Detection Accuracy</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-              <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30 hover:border-[#40A2D8]/50 transition-all duration-200 hover:bg-[#F0EDCF]/10">
-                <CardHeader>
-                  <CardTitle className="text-[#F0EDCF]">Alert Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64 flex items-center justify-center text-[#F0EDCF]/50 border border-[#0B60B0]/20 rounded-lg bg-[#F0EDCF]/3">
-                    <div className="text-center">
-                      <TrendingUp className="h-12 w-12 mx-auto mb-4 text-[#40A2D8]" />
-                      <p>Chart placeholder - Analytics coming soon</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Change Detection Over Time Chart */}
+                  <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30 hover:border-[#40A2D8]/50 transition-all duration-200 hover:bg-[#F0EDCF]/10">
+                    <CardHeader>
+                      <CardTitle className="text-[#F0EDCF]">Change Detection Over Time</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-64">
+                        {analyticsData.charts?.alertTrends && analyticsData.charts.alertTrends.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={analyticsData.charts.alertTrends}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#0B60B0" opacity={0.3} />
+                              <XAxis 
+                                dataKey="date" 
+                                stroke="#F0EDCF" 
+                                fontSize={12}
+                                tick={{ fill: '#F0EDCF' }}
+                              />
+                              <YAxis 
+                                stroke="#F0EDCF" 
+                                fontSize={12}
+                                tick={{ fill: '#F0EDCF' }}
+                              />
+                              <Tooltip 
+                                contentStyle={{
+                                  backgroundColor: '#000',
+                                  border: '1px solid #0B60B0',
+                                  borderRadius: '8px',
+                                  color: '#F0EDCF'
+                                }}
+                              />
+                              <Legend />
+                              <Area
+                                type="monotone"
+                                dataKey="high"
+                                stackId="1"
+                                stroke="#ef4444"
+                                fill="#ef4444"
+                                fillOpacity={0.6}
+                                name="High Severity"
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="medium"
+                                stackId="1"
+                                stroke="#f59e0b"
+                                fill="#f59e0b"
+                                fillOpacity={0.6}
+                                name="Medium Severity"
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="low"
+                                stackId="1"
+                                stroke="#40A2D8"
+                                fill="#40A2D8"
+                                fillOpacity={0.6}
+                                name="Low Severity"
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-[#F0EDCF]/50">
+                            <div className="text-center">
+                              <BarChart3 className="h-12 w-12 mx-auto mb-2 text-[#40A2D8]" />
+                              <p>No detection data available</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Alert Distribution by Type */}
+                  <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30 hover:border-[#40A2D8]/50 transition-all duration-200 hover:bg-[#F0EDCF]/10">
+                    <CardHeader>
+                      <CardTitle className="text-[#F0EDCF]">Alert Distribution by Type</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-64">
+                        {analyticsData.charts?.alertTypeDistribution && analyticsData.charts.alertTypeDistribution.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={analyticsData.charts.alertTypeDistribution}
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={80}
+                                fill="#40A2D8"
+                                dataKey="count"
+                                label={({ label, count }) => `${label}: ${count}`}
+                              >
+                                {analyticsData.charts.alertTypeDistribution.map((entry, index) => (
+                                  <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={[
+                                      '#40A2D8', 
+                                      '#0B60B0', 
+                                      '#F0EDCF', 
+                                      '#ef4444'
+                                    ][index % 4]} 
+                                  />
+                                ))}
+                              </Pie>
+                              <Tooltip 
+                                contentStyle={{
+                                  backgroundColor: '#000',
+                                  border: '1px solid #0B60B0',
+                                  borderRadius: '8px',
+                                  color: '#F0EDCF'
+                                }}
+                              />
+                              <Legend />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-[#F0EDCF]/50">
+                            <div className="text-center">
+                              <TrendingUp className="h-12 w-12 mx-auto mb-2 text-[#40A2D8]" />
+                              <p>No alert data available</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Monthly Trends */}
+                  <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30 hover:border-[#40A2D8]/50 transition-all duration-200 hover:bg-[#F0EDCF]/10 lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-[#F0EDCF]">Monthly Alert Trends</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-64">
+                        {analyticsData.charts?.monthlyStats && analyticsData.charts.monthlyStats.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={analyticsData.charts.monthlyStats}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#0B60B0" opacity={0.3} />
+                              <XAxis 
+                                dataKey="month" 
+                                stroke="#F0EDCF" 
+                                fontSize={12}
+                                tick={{ fill: '#F0EDCF' }}
+                              />
+                              <YAxis 
+                                stroke="#F0EDCF" 
+                                fontSize={12}
+                                tick={{ fill: '#F0EDCF' }}
+                              />
+                              <Tooltip 
+                                contentStyle={{
+                                  backgroundColor: '#000',
+                                  border: '1px solid #0B60B0',
+                                  borderRadius: '8px',
+                                  color: '#F0EDCF'
+                                }}
+                              />
+                              <Legend />
+                              <Line
+                                type="monotone"
+                                dataKey="highSeverity"
+                                stroke="#ef4444"
+                                strokeWidth={2}
+                                name="High Severity"
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="mediumSeverity"
+                                stroke="#f59e0b"
+                                strokeWidth={2}
+                                name="Medium Severity"
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="lowSeverity"
+                                stroke="#40A2D8"
+                                strokeWidth={2}
+                                name="Low Severity"
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="totalAlerts"
+                                stroke="#22c55e"
+                                strokeWidth={2}
+                                name="Total Alerts"
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-[#F0EDCF]/50">
+                            <div className="text-center">
+                              <Calendar className="h-12 w-12 mx-auto mb-2 text-[#40A2D8]" />
+                              <p>No monthly trend data available</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* AOI Performance Table */}
+                  <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30 lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-[#F0EDCF]">AOI Performance Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {analyticsData.charts?.aoiPerformance && analyticsData.charts.aoiPerformance.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-[#0B60B0]/30">
+                                <th className="text-left py-2 text-[#F0EDCF] font-medium">AOI Name</th>
+                                <th className="text-left py-2 text-[#F0EDCF] font-medium">Type</th>
+                                <th className="text-center py-2 text-[#F0EDCF] font-medium">Alerts</th>
+                                <th className="text-center py-2 text-[#F0EDCF] font-medium">High Severity</th>
+                                <th className="text-center py-2 text-[#F0EDCF] font-medium">Avg Confidence</th>
+                                <th className="text-left py-2 text-[#F0EDCF] font-medium">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {analyticsData.charts.aoiPerformance.map((aoi, index) => (
+                                <tr key={index} className="border-b border-[#0B60B0]/20">
+                                  <td className="py-3 text-[#F0EDCF]">{aoi.name}</td>
+                                  <td className="py-3 text-[#40A2D8] capitalize">
+                                    {aoi.alertType?.replace('_', ' ') || 'General'}
+                                  </td>
+                                  <td className="py-3 text-center text-[#F0EDCF]">{aoi.totalAlerts}</td>
+                                  <td className="py-3 text-center text-red-400">{aoi.highSeverityAlerts}</td>
+                                  <td className="py-3 text-center text-[#40A2D8]">{aoi.avgConfidence}%</td>
+                                  <td className="py-3">
+                                    <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${
+                                      aoi.status === 'active' 
+                                        ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                        : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                    }`}>
+                                      {aoi.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-[#F0EDCF]/50">
+                          <p>No AOI performance data available</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

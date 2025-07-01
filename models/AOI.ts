@@ -98,6 +98,9 @@ const aoiSchema = new mongoose.Schema({
   lastMonitored: {
     type: Date,
     default: Date.now
+  },
+  pausedAt: {
+    type: Date
   }
 })
 
