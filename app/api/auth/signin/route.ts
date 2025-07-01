@@ -26,7 +26,17 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ message: "Login successful." }, { status: 200 });
+    // Return user data (excluding password)
+    const userData = {
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+    };
+
+    return NextResponse.json({ 
+      message: "Login successful.", 
+      user: userData 
+    }, { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { message: "An error occurred while signing in." },

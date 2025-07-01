@@ -54,6 +54,11 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
         throw new Error(data.message || "Something went wrong")
       }
 
+      // Store user data if returned (for seamless dashboard access)
+      if (data.user) {
+        localStorage.setItem('userData', JSON.stringify(data.user))
+      }
+
       setSuccess("Registration successful! Please sign in.")
       setTimeout(() => {
         onClose()

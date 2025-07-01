@@ -92,3 +92,86 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Leaflet Map Styles */
+.leaflet-container {
+  font-family: inherit;
+}
+
+/* Ensure Bhuvan tiles display correctly */
+.leaflet-tile {
+  filter: none;
+}
+
+/* Custom control backgrounds */
+.leaflet-control {
+  border: 1px solid #0B60B0 !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Additional map styling enhancements */
+.leaflet-container {
+  background-color: #000 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  color: #F0EDCF !important;
+  border: 1px solid #0B60B0 !important;
+}
+
+.leaflet-popup-tip {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  border: 1px solid #0B60B0 !important;
+}
+
+/* Attribution styling */
+.leaflet-control-attribution {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  color: #F0EDCF !important;
+  font-size: 9px !important;
+}
+
+.leaflet-control-attribution a {
+  color: #40A2D8 !important;
+}
+
+/* Zoom control styling */
+.leaflet-control-zoom a {
+  color: #F0EDCF !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border-color: #0B60B0 !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #0B60B0 !important;
+}
+
+/* Layer control styling */
+.layer-switcher label {
+  display: flex;
+  align-items: center;
+}
+
+.layer-switcher input[type="checkbox"] {
+  accent-color: #0B60B0;
+}
+
+/* Draw control tooltips */
+.leaflet-draw-tooltip {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid #0B60B0 !important;
+  color: #F0EDCF !important;
+}
+
+/* Custom loading animation for map tiles */
+@keyframes tileLoadingPulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+  100% { opacity: 0.3; }
+}
+
+.leaflet-tile-loading {
+  animation: tileLoadingPulse 1.5s infinite ease-in-out;
+  background-color: rgba(11, 96, 176, 0.2) !important;
+}

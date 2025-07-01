@@ -155,8 +155,9 @@ export default function UltraModernAutoPartsSearch() {
   const handleLoginSuccess = (email: string) => {
     setIsAuthenticated(true)
     setUserEmail(email)
-    // Save authentication state to localStorage
+    // Save authentication state to localStorage (keep existing format for compatibility)
     localStorage.setItem('indiAlert_auth', JSON.stringify({ email, timestamp: Date.now() }))
+    // Note: userData with id is now set by the signin modal directly from API response
     // Automatically redirect to dashboard after successful login
     window.location.href = '/dashboard'
   }
@@ -167,6 +168,7 @@ export default function UltraModernAutoPartsSearch() {
     setUserEmail("")
     // Remove authentication state from localStorage
     localStorage.removeItem('indiAlert_auth')
+    localStorage.removeItem('userData')
     // Redirect to home or refresh page
     window.location.reload()
   }

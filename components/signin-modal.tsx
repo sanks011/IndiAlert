@@ -54,6 +54,11 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp, onSwitchToForgo
         throw new Error(data.message || "Something went wrong")
       }
 
+      // Store user data for dashboard access
+      if (data.user) {
+        localStorage.setItem('userData', JSON.stringify(data.user))
+      }
+
       // Success - close modal and call login success
       onClose()
       onLoginSuccess(email)

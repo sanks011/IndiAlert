@@ -18,9 +18,19 @@ export async function POST(req: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await User.create({ email, password: hashedPassword });
+    const newUser = await User.create({ email, password: hashedPassword });
 
-    return NextResponse.json({ message: "User registered." }, { status: 201 });
+    // Return user data (excluding password)
+    const userData = {
+      id: newUser._id.toString(),
+      email: newUser.email,
+      name: newUser.name || newUser.email, // fallback to email if no name
+    };
+
+    return NextResponse.json({ 
+      message: "User registered.", 
+      user: userData 
+    }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       { message: "An error occurred while registering the user." },
