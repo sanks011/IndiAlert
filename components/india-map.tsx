@@ -126,7 +126,7 @@ export default function IndiaMap({
 
     const initializeMap = async () => {
       try {
-        // Load ESRI modules
+        // Load ESRI modules including Graphic for persistent drawing
         const [
           Map,
           MapView,
@@ -135,7 +135,8 @@ export default function IndiaMap({
           Extent,
           SimpleFillSymbol,
           SimpleLineSymbol,
-          webMercatorUtils
+          webMercatorUtils,
+          Graphic
         ] = await loadModules([
           'esri/Map',
           'esri/views/MapView', 
@@ -144,7 +145,8 @@ export default function IndiaMap({
           'esri/geometry/Extent',
           'esri/symbols/SimpleFillSymbol',
           'esri/symbols/SimpleLineSymbol',
-          'esri/geometry/support/webMercatorUtils'
+          'esri/geometry/support/webMercatorUtils',
+          'esri/Graphic'
         ], { 
           css: true,
           url: 'https://js.arcgis.com/4.29/'
@@ -194,7 +196,7 @@ export default function IndiaMap({
         const sketch = new Sketch({
           layer: graphicsLayer,
           view: view,
-          creationMode: 'single', // Create once and keep visible
+          creationMode: 'update', // Allow updates but keep graphics visible
           availableCreateTools: ['polygon', 'rectangle', 'circle'],
           defaultCreateOptions: {
             hasZ: false
@@ -238,12 +240,19 @@ export default function IndiaMap({
         // Add sketch widget to view
         view.ui.add(sketch, 'top-right')
 
-        // Handle sketch events
+        // Handle sketch events - ensure graphics stay visible permanently
         sketch.on('create', (event: any) => {
           if (event.state === 'complete' && event.graphic) {
-            // Apply custom styling to keep the graphic visible
-            event.graphic.symbol = event.graphic.geometry.type === 'polygon' ? fillSymbol : 
-                                 event.graphic.geometry.type === 'circle' ? fillSymbol : lineSymbol
+            // Create a persistent graphic that won't be cleared
+            const persistentGraphic = new Graphic({
+              geometry: event.graphic.geometry,
+              symbol: event.graphic.geometry.type === 'polygon' ? fillSymbol : 
+                     event.graphic.geometry.type === 'circle' ? fillSymbol : lineSymbol
+            })
+            
+            // Clear any existing graphics and add the new persistent one
+            graphicsLayer.removeAll()
+            graphicsLayer.add(persistentGraphic)
             
             // Convert from Web Mercator to Geographic coordinates
             const geographicGeometry = webMercatorUtils.webMercatorToGeographic(event.graphic.geometry)
@@ -252,13 +261,8 @@ export default function IndiaMap({
               setSelectedGeometry(geometry)
               onGeometryChange(geometry)
               
-              // Ensure the graphic stays on the layer
-              if (!graphicsLayer.graphics.includes(event.graphic)) {
-                graphicsLayer.add(event.graphic)
-              }
-              
               if (debug) {
-                console.log('Area selected and marked on map:', geometry)
+                console.log('Area selected and permanently marked on map:', geometry)
                 console.log('Geographic coordinates:', geometry.coordinates)
               }
             }
@@ -269,9 +273,16 @@ export default function IndiaMap({
           if (event.state === 'complete' && event.graphics && event.graphics.length > 0) {
             const updatedGraphic = event.graphics[0]
             
-            // Apply custom styling to the updated graphic
-            updatedGraphic.symbol = updatedGraphic.geometry.type === 'polygon' ? fillSymbol : 
-                                  updatedGraphic.geometry.type === 'circle' ? fillSymbol : lineSymbol
+            // Create a new persistent graphic with the updated geometry
+            const persistentGraphic = new Graphic({
+              geometry: updatedGraphic.geometry,
+              symbol: updatedGraphic.geometry.type === 'polygon' ? fillSymbol : 
+                     updatedGraphic.geometry.type === 'circle' ? fillSymbol : lineSymbol
+            })
+            
+            // Clear existing graphics and add the updated persistent one
+            graphicsLayer.removeAll()
+            graphicsLayer.add(persistentGraphic)
             
             // Convert from Web Mercator to Geographic coordinates
             const geographicGeometry = webMercatorUtils.webMercatorToGeographic(updatedGraphic.geometry)
@@ -282,13 +293,16 @@ export default function IndiaMap({
               
               if (debug) {
                 console.log('Area updated and re-marked on map:', geometry)
-                console.log('Updated coordinates:', geometry.coordinates)
+                console.log('Updated geographic coordinates:', geometry.coordinates)
               }
             }
           }
         })
 
         sketch.on('delete', (event: any) => {
+          // Clear all graphics from the layer
+          graphicsLayer.removeAll()
+          
           setSelectedGeometry(null)
           onGeometryChange({
             type: 'Polygon',
