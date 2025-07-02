@@ -12,7 +12,9 @@ export async function POST(request: NextRequest) {
       geometry, 
       alertType, 
       threshold, 
-      notificationPreferences 
+      notificationPreferences,
+      monitoringDates,
+      frequency
     } = data
 
     if (!userId || !name || !geometry || !alertType || !threshold || !notificationPreferences) {
@@ -24,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     await connectMongoDB()
 
-    // Create new AOI
+    // Create new AOI with monitoring dates and frequency
     const newAOI = new AOI({
       userId,
       name,
@@ -33,6 +35,11 @@ export async function POST(request: NextRequest) {
       alertType,
       threshold,
       notificationPreferences,
+      monitoringDates: monitoringDates ? {
+        start: monitoringDates.start ? new Date(monitoringDates.start) : null,
+        end: monitoringDates.end ? new Date(monitoringDates.end) : null
+      } : null,
+      frequency: frequency || 'continuous',
       status: 'active'
     })
 

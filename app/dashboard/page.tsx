@@ -41,6 +41,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import AOICreationModal from "@/components/aoi-creation-modal"
+import IndiaMap from "@/components/india-map"
 
 interface AnalyticsData {
   summary: {
@@ -145,6 +146,14 @@ export default function Dashboard() {
   const [showAOIModal, setShowAOIModal] = useState(false)
   const [creatingAOI, setCreatingAOI] = useState(false)
   const [updatingAOI, setUpdatingAOI] = useState<string | null>(null)
+  
+  // Change detection states
+  const [runningChangeDetection, setRunningChangeDetection] = useState<string | null>(null)
+  const [showChangeDetectionModal, setShowChangeDetectionModal] = useState(false)
+  const [selectedAOI, setSelectedAOI] = useState<any>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [jobStatus, setJobStatus] = useState<any>(null)
+  const [alerts, setAlerts] = useState<any[]>([])
 
   // Get user ID from localStorage (you might want to use a proper auth context)
   const getUserId = () => {
@@ -314,8 +323,114 @@ export default function Dashboard() {
     }
   }
 
+  // Handle running change detection on an AOI
+  const handleRunChangeDetection = async (aoi: any) => {
+    try {
+      setRunningChangeDetection(aoi.id);
+      const userId = getUserId();
+      
+      if (!userId) {
+        throw new Error('Please log in to run change detection');
+      }
+
+      // Configure payload for change detection
+      const payload = {
+        aoiId: aoi.id,
+        userId: userId,
+        forceScan: true,
+        config: {
+          alertType: aoi.alertType,
+          threshold: aoi.threshold,
+          useCustomDateRange: !!(aoi.monitoringDates?.start), // Use custom dates if available
+          customDates: aoi.monitoringDates?.start ? {
+            startDate: aoi.monitoringDates.start,
+            endDate: aoi.monitoringDates.end || new Date().toISOString()
+          } : null
+        }
+      };
+      
+      // Call the change detection API
+      const response = await fetch('/api/change-detection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to start change detection');
+      }
+      
+      const data = await response.json();
+      setJobId(data.jobId);
+      
+      // Start polling for job status
+      const intervalId = setInterval(async () => {
+        try {
+          const statusResponse = await fetch(`/api/change-detection?jobId=${data.jobId}&userId=${userId}`);
+          if (statusResponse.ok) {
+            const statusData = await statusResponse.json();
+            setJobStatus(statusData);
+            
+            // If job is complete, fetch the alerts and clear interval
+            if (statusData.status === 'completed') {
+              clearInterval(intervalId);
+              await fetchAlertsForAOI(aoi.id);
+              setRunningChangeDetection(null);
+              
+              // Show success notification
+              alert(`Change detection completed for ${aoi.name}`);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to check job status:', error);
+        }
+      }, 3000); // Check every 3 seconds
+      
+      // Clean up interval if component unmounts
+      return () => {
+        clearInterval(intervalId);
+      };
+      
+    } catch (err) {
+      console.error('Error running change detection:', err);
+      setError(err instanceof Error ? err.message : 'Failed to run change detection');
+      setRunningChangeDetection(null);
+    }
+  };
+
+  // Fetch alerts for a specific AOI
+  const fetchAlertsForAOI = async (aoiId: string) => {
+    try {
+      const userId = getUserId();
+      
+      if (!userId) {
+        throw new Error('Please log in to view alerts');
+      }
+      
+      const response = await fetch(`/api/change-detection?aoiId=${aoiId}&userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAlerts(data.alerts || []);
+        
+        // Refresh dashboard data to include latest alerts
+        await fetchDashboardData();
+      }
+    } catch (error) {
+      console.error('Failed to fetch alerts:', error);
+    }
+  };
+
+  // Handle viewing AOI details (including alerts)
+  const handleViewAOIDetails = async (aoi: any) => {
+    setSelectedAOI(aoi);
+    await fetchAlertsForAOI(aoi.id);
+    setActiveTab("details");
+  };
+
   useEffect(() => {
-    fetchDashboardData()
+    fetchDashboardData();
   }, [])
 
   // Loading state
@@ -393,7 +508,10 @@ export default function Dashboard() {
             { id: "aois", label: "My AOIs", icon: Map },
             { id: "alerts", label: "Alerts", icon: AlertTriangle },
             { id: "analytics", label: "Analytics", icon: TrendingUp },
-          ].map((tab) => (
+            // "details" tab is hidden as it's only used when viewing a specific AOI
+          ]
+          .filter(tab => tab.id !== "details" || activeTab !== "details") // Show all tabs except "details"
+          .map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -650,6 +768,7 @@ export default function Dashboard() {
                             variant="outline" 
                             size="sm" 
                             className="flex-1 border-[#0B60B0] text-[#0B60B0] hover:bg-[#0B60B0] hover:text-[#F0EDCF] transition-all duration-200"
+                            onClick={() => handleViewAOIDetails(aoi)}
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
@@ -662,6 +781,25 @@ export default function Dashboard() {
                             <Settings className="h-4 w-4" />
                           </Button>
                         </div>
+                        
+                        {/* Run Change Detection Button */}
+                        <Button 
+                          className="w-full mt-3 bg-[#0B60B0] hover:bg-[#40A2D8] text-[#F0EDCF] transition-all duration-200"
+                          onClick={() => handleRunChangeDetection(aoi)}
+                          disabled={runningChangeDetection === aoi.id}
+                        >
+                          {runningChangeDetection === aoi.id ? (
+                            <>
+                              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-white"></div>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Satellite className="h-4 w-4 mr-2" />
+                              Run Change Detection
+                            </>
+                          )}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -838,7 +976,7 @@ export default function Dashboard() {
                     <CardContent className="pt-6">
                       <div className="text-center">
                         <p className="text-2xl font-bold text-[#40A2D8]">
-                          {analyticsData.aoiPerformance?.length || 0}
+                          {analyticsData?.charts?.aoiPerformance?.length || 0}
                         </p>
                         <p className="text-sm text-[#F0EDCF]/70">Active AOIs</p>
                       </div>
@@ -1121,6 +1259,170 @@ export default function Dashboard() {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* AOI Details Tab */}
+        {activeTab === "details" && selectedAOI && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setActiveTab("aois")}
+                  className="text-[#0B60B0] hover:text-[#40A2D8] p-0"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                </Button>
+                <h2 className="text-2xl font-bold text-[#F0EDCF] flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  {selectedAOI.name}
+                </h2>
+              </div>
+              <Button 
+                onClick={() => handleRunChangeDetection(selectedAOI)}
+                disabled={runningChangeDetection === selectedAOI.id}
+                className="bg-[#0B60B0] hover:bg-[#40A2D8] text-[#F0EDCF] border-0 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                {runningChangeDetection === selectedAOI.id ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-white"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Satellite className="h-4 w-4 mr-2" />
+                    Run Change Detection
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* AOI Information Card */}
+              <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30 transition-all duration-200 lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="text-lg text-[#F0EDCF]">AOI Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#F0EDCF]/70">Area:</span>
+                      <span className="text-[#F0EDCF]">{selectedAOI.area}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#F0EDCF]/70">Alert Type:</span>
+                      <span className="text-[#40A2D8] capitalize">{selectedAOI.alertType.replace('_', ' ')}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#F0EDCF]/70">Threshold:</span>
+                      <span className="text-[#F0EDCF]">{Math.round(selectedAOI.threshold * 100)}%</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#F0EDCF]/70">Status:</span>
+                      <span className={cn(
+                        "px-2 py-1 rounded-full text-xs font-medium capitalize",
+                        selectedAOI.status === "active"
+                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                          : "bg-gray-500/20 text-gray-400 border border-gray-500/30"
+                      )}>
+                        {selectedAOI.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#F0EDCF]/70">Last Update:</span>
+                      <span className="text-[#F0EDCF]">
+                        {new Date(selectedAOI.lastUpdate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#F0EDCF]/70">Created:</span>
+                      <span className="text-[#F0EDCF]">
+                        {new Date(selectedAOI.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Change Detection Results Card */}
+              <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30 transition-all duration-200 lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-lg text-[#F0EDCF]">Change Detection Results</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {alerts.length > 0 ? (
+                    <div className="space-y-4">
+                      {alerts.map(alert => (
+                        <Card key={alert.id} className="bg-[#F0EDCF]/5 border-[#0B60B0]/30">
+                          <CardHeader className="pb-2">
+                            <div className="flex justify-between items-center">
+                              <CardTitle className="text-md text-[#F0EDCF]">{alert.type.replace('_', ' ')}</CardTitle>
+                              <span
+                                className={cn(
+                                  "px-2 py-1 rounded-full text-xs font-medium capitalize",
+                                  alert.severity === "high"
+                                    ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                                    : alert.severity === "medium"
+                                    ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                                    : "bg-green-500/20 text-green-400 border border-green-500/30"
+                                )}
+                              >
+                                {alert.severity}
+                              </span>
+                            </div>
+                            <div className="text-sm text-[#F0EDCF]/70">
+                              {new Date(alert.time).toLocaleDateString()}
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm text-[#F0EDCF]">{alert.description}</p>
+                            <div className="mt-2 text-xs text-[#F0EDCF]/70">
+                              <div>Confidence: {(alert.confidence * 100).toFixed(1)}%</div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <Satellite className="h-12 w-12 mx-auto mb-3 text-[#F0EDCF]/30" />
+                      <p className="text-[#F0EDCF] font-medium">No Changes Detected</p>
+                      <p className="text-[#F0EDCF]/70 text-sm mt-1">
+                        Run a change detection analysis to identify changes in this area.
+                      </p>
+                      <Button 
+                        onClick={() => handleRunChangeDetection(selectedAOI)}
+                        disabled={runningChangeDetection === selectedAOI.id}
+                        className="mt-4 bg-[#0B60B0] hover:bg-[#40A2D8] text-[#F0EDCF]"
+                      >
+                        {runningChangeDetection === selectedAOI.id ? (
+                          <>
+                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-white"></div>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <Satellite className="h-4 w-4 mr-2" />
+                            Run Change Detection
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* Map View Card */}
+              <Card className="bg-[#F0EDCF]/5 border-[#0B60B0]/30 transition-all duration-200 lg:col-span-3">
+                <CardHeader>
+                  <CardTitle className="text-lg text-[#F0EDCF]">Area Visualization</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[400px]">
+                  <IndiaMap />
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
       </div>

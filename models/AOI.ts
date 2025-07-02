@@ -45,6 +45,20 @@ const aoiSchema = new mongoose.Schema({
     max: 1.0,
     required: true
   },
+  monitoringDates: {
+    start: {
+      type: Date,
+      default: Date.now
+    },
+    end: {
+      type: Date
+    }
+  },
+  frequency: {
+    type: String,
+    enum: ['continuous', 'daily', 'weekly', 'custom'],
+    default: 'continuous'
+  },
   notificationPreferences: {
     email: {
       enabled: {

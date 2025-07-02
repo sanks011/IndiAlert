@@ -9,9 +9,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Mail, Phone, MessageSquare, PhoneCall, MapPin, AlertTriangle } from 'lucide-react'
+import { Mail, Phone, MessageSquare, PhoneCall, MapPin, AlertTriangle, Calendar } from 'lucide-react'
 import IndiaMap from './india-map-wrapper'
 import { cn } from '@/lib/utils'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { format } from 'date-fns'
+import { Calendar as CalendarComponent } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 interface Geometry {
   type: 'Polygon' | 'Circle' | 'Rectangle'
@@ -51,6 +55,30 @@ const alertTypes = [
     name: 'Land Use Change Alert',
     description: 'Monitor general land use and land cover changes',
     icon: '🌍'
+  },
+  {
+    id: 'transformer_change_detection',
+    name: 'Advanced AI Detection',
+    description: 'Transformer-based AI with attention mechanisms for complex changes',
+    icon: '🤖'
+  },
+  {
+    id: 'temporal_consistency_detection',
+    name: 'Seasonal-Aware Detection',
+    description: 'Reduces false positives from seasonal variations and crop cycles',
+    icon: '📅'
+  },
+  {
+    id: 'multisensor_fusion_detection',
+    name: 'Multi-Sensor Fusion',
+    description: 'Combines optical and radar data for enhanced accuracy',
+    icon: '📡'
+  },
+  {
+    id: 'spectral_temporal_analysis',
+    name: 'Spectral-Temporal Analysis',
+    description: 'Advanced spectral analysis for specific change types',
+    icon: '🔬'
   }
 ]
 
@@ -64,6 +92,11 @@ export default function AOICreationModal({ isOpen, onClose, onSubmit, isLoading 
     threshold: [0.5],
     email: '',
     enableEmail: true,
+    monitoringDates: {
+      start: null as Date | null,
+      end: null as Date | null,
+    },
+    frequency: 'continuous', // 'continuous', 'daily', 'weekly'
   })
 
   const handleGeometryChange = (geometry: Geometry) => {
@@ -75,12 +108,31 @@ export default function AOICreationModal({ isOpen, onClose, onSubmit, isLoading 
       return
     }
 
+    // Validate dates
+    if (!formData.monitoringDates.start) {
+      alert('Please select a start date for monitoring')
+      return
+    }
+
+    // For custom date ranges, validate end date is after start date
+    if (formData.frequency === 'custom' && formData.monitoringDates.end) {
+      if (formData.monitoringDates.end <= formData.monitoringDates.start) {
+        alert('End date must be after start date')
+        return
+      }
+    }
+
     const aoiData = {
       name: formData.name,
       description: formData.description,
       geometry: formData.geometry,
       alertType: formData.alertType,
       threshold: formData.threshold[0],
+      monitoringDates: {
+        start: formData.monitoringDates.start ? formData.monitoringDates.start.toISOString() : null,
+        end: formData.monitoringDates.end ? formData.monitoringDates.end.toISOString() : null
+      },
+      frequency: formData.frequency,
       notificationPreferences: {
         email: {
           enabled: formData.enableEmail,
@@ -110,6 +162,11 @@ export default function AOICreationModal({ isOpen, onClose, onSubmit, isLoading 
       threshold: [0.5],
       email: '',
       enableEmail: true,
+      monitoringDates: {
+        start: null,
+        end: null,
+      },
+      frequency: 'continuous',
     })
     setStep(1)
   }
@@ -121,7 +178,12 @@ export default function AOICreationModal({ isOpen, onClose, onSubmit, isLoading 
 
   const isStep1Valid = formData.name && formData.geometry
   const isStep2Valid = formData.alertType
-  const isStep3Valid = formData.email
+  // Step 3 validation: For continuous monitoring, we only need a start date
+  // For custom date range, we need both start and end dates
+  const isStep3Valid = formData.frequency === 'continuous' 
+    ? !!formData.monitoringDates.start 
+    : !!formData.monitoringDates.start && !!formData.monitoringDates.end
+  const isStep4Valid = formData.email
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -142,7 +204,7 @@ export default function AOICreationModal({ isOpen, onClose, onSubmit, isLoading 
 
         {/* Progress Steps */}
         <div className="flex items-center justify-between mb-6">
-          {[1, 2, 3].map((stepNum) => (
+          {[1, 2, 3, 4].map((stepNum) => (
             <div key={stepNum} className="flex items-center">
               <div
                 className={cn(
@@ -154,10 +216,10 @@ export default function AOICreationModal({ isOpen, onClose, onSubmit, isLoading 
               >
                 {stepNum}
               </div>
-              {stepNum < 3 && (
+              {stepNum < 4 && (
                 <div
                   className={cn(
-                    "w-16 h-0.5 mx-2",
+                    "w-12 h-0.5 mx-1",
                     step > stepNum ? "bg-[#0B60B0]" : "bg-[#F0EDCF]/20"
                   )}
                 />
@@ -339,14 +401,170 @@ export default function AOICreationModal({ isOpen, onClose, onSubmit, isLoading 
                 disabled={!isStep2Valid}
                 className="bg-[#0B60B0] hover:bg-[#40A2D8] text-[#F0EDCF]"
               >
+                Next: Monitoring Schedule
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Monitoring Schedule */}
+        {step === 3 && (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <Label className="text-[#F0EDCF] text-lg">Monitoring Schedule</Label>
+              
+              <RadioGroup 
+                value={formData.frequency} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, frequency: value }))}
+                className="space-y-4"
+              >
+                <div className="flex items-center space-x-2 bg-[#0B60B0]/10 p-4 rounded-lg border border-[#0B60B0]/30">
+                  <RadioGroupItem value="continuous" id="continuous" />
+                  <Label htmlFor="continuous" className="text-[#F0EDCF] cursor-pointer">
+                    <div className="font-medium">Continuous Monitoring</div>
+                    <p className="text-sm text-[#F0EDCF]/70 mt-1">
+                      Monitor from start date until the AOI is paused or deleted
+                    </p>
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 bg-[#F0EDCF]/5 p-4 rounded-lg border border-[#0B60B0]/20">
+                  <RadioGroupItem value="custom" id="custom" />
+                  <Label htmlFor="custom" className="text-[#F0EDCF] cursor-pointer">
+                    <div className="font-medium">Custom Date Range</div>
+                    <p className="text-sm text-[#F0EDCF]/70 mt-1">
+                      Set specific start and end dates for monitoring
+                    </p>
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                {/* Start Date Selection */}
+                <div className="space-y-2">
+                  <Label className="text-[#F0EDCF]">Start Date *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal bg-[#F0EDCF]/5 border-[#0B60B0]/30 text-[#F0EDCF]",
+                          !formData.monitoringDates.start && "text-[#F0EDCF]/50"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {formData.monitoringDates.start ? (
+                          format(formData.monitoringDates.start, "PPP")
+                        ) : (
+                          <span>Select start date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-[#0F1729] border-[#0B60B0]/30">
+                      <CalendarComponent
+                        mode="single"
+                        selected={formData.monitoringDates.start as any}
+                        onSelect={(date: Date | undefined) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            monitoringDates: {
+                              ...prev.monitoringDates,
+                              start: date || null,
+                            },
+                          }))
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* End Date Selection - Only required for custom date range */}
+                <div className="space-y-2">
+                  <Label className="text-[#F0EDCF]">End Date {formData.frequency === 'custom' ? '*' : '(Optional)'}</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal bg-[#F0EDCF]/5 border-[#0B60B0]/30 text-[#F0EDCF]",
+                          !formData.monitoringDates.end && "text-[#F0EDCF]/50"
+                        )}
+                        disabled={!formData.monitoringDates.start}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {formData.monitoringDates.end ? (
+                          format(formData.monitoringDates.end, "PPP")
+                        ) : (
+                          <span>
+                            {formData.frequency === 'continuous' 
+                              ? 'Continue indefinitely' 
+                              : 'Select end date'}
+                          </span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-[#0F1729] border-[#0B60B0]/30">
+                      <CalendarComponent
+                        mode="single"
+                        selected={formData.monitoringDates.end as any}
+                        onSelect={(date: Date | undefined) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            monitoringDates: {
+                              ...prev.monitoringDates,
+                              end: date || null,
+                            },
+                          }))
+                        }
+                        fromDate={formData.monitoringDates.start || undefined}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+              
+              {formData.monitoringDates.start && formData.monitoringDates.end && (
+                <div className="text-sm text-[#40A2D8] bg-[#0B60B0]/10 p-4 rounded-lg border border-[#0B60B0]/30 mt-2">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <p>Monitoring period: {format(formData.monitoringDates.start, "PPP")} to {format(formData.monitoringDates.end, "PPP")}</p>
+                  </div>
+                </div>
+              )}
+
+              {formData.monitoringDates.start && !formData.monitoringDates.end && formData.frequency === 'continuous' && (
+                <div className="text-sm text-[#40A2D8] bg-[#0B60B0]/10 p-4 rounded-lg border border-[#0B60B0]/30 mt-2">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <p>Monitoring will start on {format(formData.monitoringDates.start, "PPP")} and continue indefinitely</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between">
+              <Button
+                onClick={() => setStep(2)}
+                variant="outline"
+                className="border-[#0B60B0] text-[#0B60B0] hover:bg-[#0B60B0] hover:text-[#F0EDCF]"
+              >
+                Back
+              </Button>
+              <Button
+                onClick={() => setStep(4)}
+                disabled={!isStep3Valid}
+                className="bg-[#0B60B0] hover:bg-[#40A2D8] text-[#F0EDCF]"
+              >
                 Next: Notification Settings
               </Button>
             </div>
           </div>
         )}
 
-        {/* Step 3: Notification Preferences */}
-        {step === 3 && (
+        {/* Step 4: Notification Preferences */}
+        {step === 4 && (
           <div className="space-y-6">
             <div className="space-y-4">
               <Label className="text-[#F0EDCF] text-lg">Notification Preferences</Label>
@@ -421,7 +639,7 @@ export default function AOICreationModal({ isOpen, onClose, onSubmit, isLoading 
 
             <div className="flex justify-between">
               <Button
-                onClick={() => setStep(2)}
+                onClick={() => setStep(3)}
                 variant="outline"
                 className="border-[#0B60B0] text-[#0B60B0] hover:bg-[#0B60B0] hover:text-[#F0EDCF]"
               >
@@ -429,7 +647,7 @@ export default function AOICreationModal({ isOpen, onClose, onSubmit, isLoading 
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={!isStep3Valid || isLoading}
+                disabled={!isStep4Valid || isLoading}
                 className="bg-[#0B60B0] hover:bg-[#40A2D8] text-[#F0EDCF] flex items-center gap-2"
               >
                 {isLoading ? (

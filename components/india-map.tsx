@@ -11,7 +11,7 @@ interface Geometry {
 }
 
 interface IndiaMapProps {
-  onGeometryChange: (geometry: Geometry) => void
+  onGeometryChange?: (geometry: Geometry) => void
   height?: string
   className?: string
   debug?: boolean // Enable debug mode for troubleshooting
@@ -259,7 +259,9 @@ export default function IndiaMap({
             const geometry = convertEsriGeometryToGeometry(geographicGeometry)
             if (geometry) {
               setSelectedGeometry(geometry)
-              onGeometryChange(geometry)
+              if (onGeometryChange) {
+                onGeometryChange(geometry)
+              }
               
               if (debug) {
                 console.log('Area selected and permanently marked on map:', geometry)

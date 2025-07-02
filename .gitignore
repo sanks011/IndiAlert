@@ -25,3 +25,53 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+venv
+trash
+temp
+/__pycache__
+__pycache__
+
+# Test files and debugging scripts
+test_kerala_debug.py
+test_india_deforestation.py
+run_detection.py
+*_debug.py
+*_test.py
+
+# ML model outputs and temporary files
+/ml/temp/
+/ml/outputs/
+*.pkl
+*.joblib
+
+# Earth Engine authentication
+.ee/
+ee_token.json
+
+# Jupyter notebooks (if any)
+*.ipynb
+.ipynb_checkpoints/
+
+# Python cache and compiled files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
