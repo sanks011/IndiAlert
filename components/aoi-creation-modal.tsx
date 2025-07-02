@@ -194,35 +194,55 @@ export default function AOICreationModal({ isOpen, onClose, onSubmit, isLoading 
                   />
                 </div>
                 
+                {/* Selected Area Coordinates Display */}
+                {formData.geometry && (
+                  <div className="space-y-2">
+                    <Label className="text-[#F0EDCF] font-medium">Selected Area Coordinates</Label>
+                    <div className="p-3 bg-[#0B60B0]/10 rounded-lg border border-[#0B60B0]/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-green-400">✓</span>
+                        <span className="text-[#F0EDCF] font-medium">Area Selected</span>
+                        <span className="text-[#F0EDCF]/70 text-sm">({formData.geometry.type})</span>
+                      </div>
+                      
+                      {formData.geometry.type === 'Circle' && formData.geometry.center && (
+                        <div className="space-y-1 text-sm">
+                          <p className="text-[#F0EDCF]/80">
+                            <strong>Center:</strong> {formData.geometry.center[1].toFixed(6)}°N, {formData.geometry.center[0].toFixed(6)}°E
+                          </p>
+                          <p className="text-[#F0EDCF]/80">
+                            <strong>Radius:</strong> {formData.geometry.radius ? Math.round(formData.geometry.radius / 1000) : 0} km
+                          </p>
+                        </div>
+                      )}
+                      
+                      {(formData.geometry.type === 'Polygon' || formData.geometry.type === 'Rectangle') && 
+                       formData.geometry.coordinates && formData.geometry.coordinates.length > 0 && (
+                        <div className="space-y-1 text-sm">
+                          <p className="text-[#F0EDCF]/80">
+                            <strong>Points:</strong> {formData.geometry.coordinates[0]?.length || 0} coordinates
+                          </p>
+                          <div className="max-h-20 overflow-y-auto text-xs text-[#F0EDCF]/70 space-y-1">
+                            {formData.geometry.coordinates[0]?.slice(0, 5).map((coord: number[], idx: number) => (
+                              <div key={idx} className="font-mono">
+                                Point {idx + 1}: {coord[1]?.toFixed(6)}°N, {coord[0]?.toFixed(6)}°E
+                              </div>
+                            ))}
+                            {formData.geometry.coordinates[0]?.length > 5 && (
+                              <div className="text-[#F0EDCF]/50 italic">
+                                ... and {formData.geometry.coordinates[0].length - 5} more points
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
                 {/* Status indicator box */}
                 <div className="flex-grow">
-                  {formData.geometry ? (
-                    <div className="p-4 bg-[#0B60B0]/10 rounded-lg border border-[#0B60B0]/30 h-full flex flex-col justify-center">
-                      <h4 className="text-[#F0EDCF] font-medium mb-2 flex items-center">
-                        <span className="text-green-400 mr-2">✓</span> Area of Interest Selected
-                      </h4>
-                      <p className="text-[#F0EDCF]/80 mb-1 text-sm">
-                        <strong>Type:</strong> {formData.geometry.type}
-                      </p>
-                      {formData.geometry.radius && (
-                        <p className="text-[#F0EDCF]/80 mb-1 text-sm">
-                          <strong>Radius:</strong> {Math.round(formData.geometry.radius / 1000)} km
-                        </p>
-                      )}
-                      <p className="text-[#F0EDCF]/70 text-xs mt-2">
-                        You can redraw your selection if needed
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/30 h-full flex flex-col justify-center">
-                      <h4 className="text-yellow-400 font-medium mb-2 flex items-center">
-                        <AlertTriangle className="h-5 w-5 mr-2" /> Area Selection Required
-                      </h4>
-                      <p className="text-[#F0EDCF]/80 text-sm">
-                        Please draw an area on the map using the tools in the top-right corner.
-                      </p>
-                    </div>
-                  )}
+                  {/* Removed success message - area stays visible on map */}
                 </div>
               </div>
               

@@ -93,85 +93,117 @@ body {
   }
 }
 
-/* Leaflet Map Styles */
-.leaflet-container {
+/* ESRI ArcGIS Map Styles */
+.esri-view {
   font-family: inherit;
-}
-
-/* Ensure Bhuvan tiles display correctly */
-.leaflet-tile {
-  filter: none;
-}
-
-/* Custom control backgrounds */
-.leaflet-control {
-  border: 1px solid #0B60B0 !important;
-  background-color: rgba(0, 0, 0, 0.8) !important;
-}
-
-/* Additional map styling enhancements */
-.leaflet-container {
   background-color: #000 !important;
 }
 
-.leaflet-popup-content-wrapper {
-  background-color: rgba(0, 0, 0, 0.9) !important;
+/* ESRI Widget Styling */
+.esri-widget {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid #0B60B0 !important;
   color: #F0EDCF !important;
-  border: 1px solid #0B60B0 !important;
+  font-family: inherit !important;
 }
 
-.leaflet-popup-tip {
+.esri-widget--button {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid #0B60B0 !important;
+  color: #F0EDCF !important;
+}
+
+.esri-widget--button:hover {
+  background-color: #0B60B0 !important;
+  color: #F0EDCF !important;
+}
+
+.esri-widget--button:focus {
+  outline: 2px solid #40A2D8 !important;
+}
+
+/* ESRI Sketch Widget Styling */
+.esri-sketch {
   background-color: rgba(0, 0, 0, 0.9) !important;
   border: 1px solid #0B60B0 !important;
 }
 
-/* Attribution styling */
-.leaflet-control-attribution {
+.esri-sketch__button {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid #0B60B0 !important;
+  color: #F0EDCF !important;
+}
+
+.esri-sketch__button:hover {
+  background-color: #0B60B0 !important;
+  color: #F0EDCF !important;
+}
+
+.esri-sketch__button--selected {
+  background-color: #0B60B0 !important;
+  color: #F0EDCF !important;
+}
+
+/* ESRI Attribution */
+.esri-attribution {
   background-color: rgba(0, 0, 0, 0.7) !important;
   color: #F0EDCF !important;
   font-size: 9px !important;
+  border: 1px solid #0B60B0 !important;
 }
 
-.leaflet-control-attribution a {
+.esri-attribution a {
   color: #40A2D8 !important;
 }
 
-/* Zoom control styling */
-.leaflet-control-zoom a {
-  color: #F0EDCF !important;
+/* ESRI Zoom Controls */
+.esri-zoom {
   background-color: rgba(0, 0, 0, 0.8) !important;
-  border-color: #0B60B0 !important;
+  border: 1px solid #0B60B0 !important;
 }
 
-.leaflet-control-zoom a:hover {
+.esri-zoom .esri-widget--button {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border-color: #0B60B0 !important;
+  color: #F0EDCF !important;
+}
+
+.esri-zoom .esri-widget--button:hover {
   background-color: #0B60B0 !important;
 }
 
-/* Layer control styling */
-.layer-switcher label {
-  display: flex;
-  align-items: center;
-}
-
-.layer-switcher input[type="checkbox"] {
-  accent-color: #0B60B0;
-}
-
-/* Draw control tooltips */
-.leaflet-draw-tooltip {
-  background-color: rgba(0, 0, 0, 0.8) !important;
+/* ESRI Popup Styling */
+.esri-popup .esri-popup-main {
+  background-color: rgba(0, 0, 0, 0.9) !important;
   border: 1px solid #0B60B0 !important;
   color: #F0EDCF !important;
 }
 
-/* Custom loading animation for map tiles */
-@keyframes tileLoadingPulse {
+.esri-popup .esri-popup-header {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  border-bottom: 1px solid #0B60B0 !important;
+  color: #F0EDCF !important;
+}
+
+.esri-popup .esri-popup-body {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  color: #F0EDCF !important;
+}
+
+/* Custom loading animation for ESRI tiles */
+@keyframes esriTileLoadingPulse {
   0% { opacity: 0.3; }
   50% { opacity: 0.7; }
   100% { opacity: 0.3; }
 }
 
-.leaflet-tile-loading {
-  animation: tileLoadingPulse 1.5s infinite ease-in-out;
-  background-color: rgba(11, 96, 176, 0.2) !important;
+.esri-view-surface--inset-outline:before {
+  border-color: rgba(11, 96, 176, 0.5) !important;
+}
+
+/* ESRI Drawing Graphics Styling */
+.esri-sketch__temp-graphic {
+  fill: rgba(64, 162, 216, 0.3) !important;
+  stroke: #0B60B0 !important;
+  stroke-width: 2px !important;
 }
