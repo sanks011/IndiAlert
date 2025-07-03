@@ -45,6 +45,16 @@ run_detection.py
 *.pkl
 *.joblib
 
+# Test cases and results (comprehensive India-specific tests)
+/temp/india_test_cases/
+/temp/india_results/
+*test_case*.json
+*_result*.json
+*_alert_data.json
+*_status.json
+job_*.json
+india_test_summary.json
+
 # Earth Engine authentication
 .ee/
 ee_token.json
