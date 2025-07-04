@@ -125,8 +125,8 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
             print(f"Could not sample scores: {e}")
             # Continue processing despite sampling error
         
-        # More sensitive thresholding to catch real deforestation
-        thresholded_change = filtered_score.gte(0.15).rename('thresholded_change')
+        # More sensitive thresholding to catch real deforestation - OPTIMIZED
+        thresholded_change = filtered_score.gte(0.08).rename('thresholded_change')
         
         # Debug: Sample the threshold result
         try:
@@ -485,24 +485,24 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
             evi_score.multiply(0.1)
         )
         
-        # More lenient forest baseline requirement for Indian forests
+        # More lenient forest baseline requirement for Indian forests - OPTIMIZED
         # Many Indian forests are degraded or have moderate NDVI
-        forest_baseline = ndvi_before.gt(0.15).And(  # Even more lenient baseline - catch degraded forests
+        forest_baseline = ndvi_before.gt(0.1).And(  # More lenient baseline - catch more degraded forests
             ndvi_after.lt(ndvi_before)  # Ensure vegetation actually decreased
         )
         
-        # Alternative scoring for areas with low baseline vegetation (degraded forests)
+        # Alternative scoring for areas with low baseline vegetation (degraded forests) - OPTIMIZED
         # This catches deforestation in degraded forest areas
         low_vegetation_score = ndvi_decrease.multiply(3.5).clamp(0, 1)  # Even higher multiplier for sensitivity
-        low_vegetation_baseline = ndvi_before.gt(0.05).And(ndvi_before.lte(0.3)).And(  # Degraded forest range
+        low_vegetation_baseline = ndvi_before.gt(0.03).And(ndvi_before.lte(0.25)).And(  # Even more lenient range
             ndvi_after.lt(ndvi_before)  # Must show vegetation decrease
         )
         
-        # Emergency scoring for areas with very low/sparse vegetation
+        # Emergency scoring for areas with very low/sparse vegetation - OPTIMIZED
         # This handles mixed pixels or very degraded areas
         emergency_score = ndvi_change.multiply(4.5).clamp(0, 1)  # Even higher sensitivity
-        emergency_baseline = ndvi_before.gt(-0.1).And(ndvi_before.lte(0.2)).And(  # Sparse vegetation
-            ndvi_change.gt(0.08)  # Lower threshold for significant decrease
+        emergency_baseline = ndvi_before.gt(-0.1).And(ndvi_before.lte(0.15)).And(  # Even more lenient for sparse
+            ndvi_change.gt(0.05)  # Lower threshold for significant decrease
         )
         
         # Combine all scoring approaches, taking the maximum for sensitivity
@@ -624,22 +624,22 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
             substantial_biomass_loss.And(moisture_depletion).And(minimal_vegetation_remains)
         )
         
-        # REBALANCED penalty system - much more moderate to preserve real deforestation signals
+        # OPTIMIZED penalty system - much more moderate to preserve real deforestation signals
         
-        # Ultra-stable forest penalty - MODERATE (reduce but don't eliminate)
-        ultra_stable_penalty = ultra_stable_forest.multiply(-0.6).add(1.0).clamp(0.4, 1.0)
+        # Ultra-stable forest penalty - LIGHTER
+        ultra_stable_penalty = ultra_stable_forest.multiply(-0.4).add(1.0).clamp(0.6, 1.0)
         
-        # Light penalties for less obvious false positives
-        temporal_penalty = temporal_filter.gt(0.7).multiply(-0.15).add(1.0).clamp(0.85, 1.0)  # Much lighter
-        texture_penalty = texture_filter.gt(0.7).multiply(-0.15).add(1.0).clamp(0.85, 1.0)   # Much lighter
-        agricultural_penalty = agricultural_filter.gt(0.7).multiply(-0.25).add(1.0).clamp(0.75, 1.0)  # Lighter
-        forest_penalty = forest_signature_filter.gt(0.7).multiply(-0.15).add(1.0).clamp(0.85, 1.0)  # Much lighter
-        seasonal_penalty = seasonal_filter.gt(0.7).multiply(-0.15).add(1.0).clamp(0.85, 1.0)  # Much lighter
+        # Very light penalties for less obvious false positives
+        temporal_penalty = temporal_filter.gt(0.8).multiply(-0.1).add(1.0).clamp(0.9, 1.0)  # Much lighter
+        texture_penalty = texture_filter.gt(0.8).multiply(-0.1).add(1.0).clamp(0.9, 1.0)   # Much lighter
+        agricultural_penalty = agricultural_filter.gt(0.8).multiply(-0.2).add(1.0).clamp(0.8, 1.0)  # Lighter
+        forest_penalty = forest_signature_filter.gt(0.8).multiply(-0.1).add(1.0).clamp(0.9, 1.0)  # Much lighter
+        seasonal_penalty = seasonal_filter.gt(0.8).multiply(-0.1).add(1.0).clamp(0.9, 1.0)  # Much lighter
         
-        # MODERATE penalties for clear false positive patterns - but preserve real deforestation
-        stable_forest_penalty = likely_stable_forest.multiply(-0.5).add(1.0).clamp(0.5, 1.0)  # Much more moderate
-        seasonal_variation_penalty = likely_seasonal.multiply(-0.4).add(1.0).clamp(0.6, 1.0)  # MUCH more moderate - was killing everything
-        cloud_shadow_penalty = uniform_spectral_change.multiply(-0.7).add(1.0).clamp(0.3, 1.0)  # Moderate
+        # LIGHTER penalties for clear false positive patterns - but preserve real deforestation
+        stable_forest_penalty = likely_stable_forest.multiply(-0.3).add(1.0).clamp(0.7, 1.0)  # Much lighter
+        seasonal_variation_penalty = likely_seasonal.multiply(-0.2).add(1.0).clamp(0.8, 1.0)  # MUCH lighter - was killing everything
+        cloud_shadow_penalty = uniform_spectral_change.multiply(-0.5).add(1.0).clamp(0.5, 1.0)  # Lighter
         
         # STRONGER boost for clear deforestation signals (preserve real changes)
         deforestation_boost = clear_deforestation_signal.multiply(0.6).add(1.0).clamp(1.0, 1.6)  # Even stronger boost
@@ -861,10 +861,10 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
         """Enhanced baseline filter with balanced criteria for meaningful vegetation"""
         print("DEBUG: Applying enhanced vegetation baseline filter...")
         
-        # Balanced baseline to detect meaningful vegetation while reducing false positives
+        # Balanced baseline to detect meaningful vegetation while reducing false positives - OPTIMIZED
         # Allow detection of degraded forests and sparse vegetation but filter obvious non-vegetation
-        ndvi_threshold = 0.15   # Reasonable threshold for meaningful vegetation
-        ndmi_threshold = -0.05  # Allow somewhat dry areas
+        ndvi_threshold = 0.08   # Lower threshold for more sensitive detection
+        ndmi_threshold = -0.1   # More lenient for dry areas
         
         # Method 1: Meaningful vegetation (NDVI > 0.15)
         meaningful_vegetation = before_indices.select('NDVI').gt(ndvi_threshold)
@@ -962,10 +962,10 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
             potential_false_positive = potential_agriculture.Or(seasonal_deciduous).Or(
                 gradual_change).Or(inconsistent_change).Or(impossible_change)
             
-            # Apply BALANCED filtering to preserve real signals while reducing false positives
+            # Apply LIGHTER filtering to preserve real signals while reducing false positives
             # Use research-based moderate reduction factors for seasonal patterns
             # Preserve strong signals that indicate real deforestation
-            balanced_factor = potential_false_positive.multiply(-0.6).add(1.0).clamp(0.3, 1.0)
+            balanced_factor = potential_false_positive.multiply(-0.3).add(1.0).clamp(0.6, 1.0)  # Much lighter filtering
             
             # Apply the balanced seasonal filter
             filtered_score = score_image.multiply(balanced_factor)
@@ -1021,32 +1021,32 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
             winter_months = [12, 1, 2]    # December-February  
             spring_months = [3, 4, 5]     # March-May
             
-            # BALANCED seasonal adjustment factors based on research best practices
+            # LIGHTER seasonal adjustment factors based on research best practices
             seasonal_factor = 1.0
             
-            # Apply moderate reductions for seasonal transitions while preserving strong signals
+            # Apply lighter reductions for seasonal transitions while preserving strong signals
             if (before_month in winter_months and after_month in spring_months):
-                seasonal_factor = 0.6  # Moderate reduction for winter->spring
-                print(f"DEBUG: Applying moderate winter->spring filter (factor: {seasonal_factor})")
+                seasonal_factor = 0.8  # Lighter reduction for winter->spring
+                print(f"DEBUG: Applying light winter->spring filter (factor: {seasonal_factor})")
                 
             elif (before_month in spring_months and after_month in monsoon_months):
-                seasonal_factor = 0.6  # Moderate reduction for spring->monsoon
-                print(f"DEBUG: Applying moderate spring->monsoon filter (factor: {seasonal_factor})")
+                seasonal_factor = 0.8  # Lighter reduction for spring->monsoon
+                print(f"DEBUG: Applying light spring->monsoon filter (factor: {seasonal_factor})")
                 
             elif (before_month in monsoon_months and after_month in winter_months):
-                seasonal_factor = 0.4  # More reduction for monsoon->winter (senescence)
+                seasonal_factor = 0.7  # Moderate reduction for monsoon->winter (senescence)
                 print(f"DEBUG: Applying moderate monsoon->winter filter (factor: {seasonal_factor})")
                 
             elif before_month in winter_months and after_month in winter_months:
-                seasonal_factor = 0.7  # Light reduction within dormant season
-                print(f"DEBUG: Applying light dormant season filter (factor: {seasonal_factor})")
+                seasonal_factor = 0.9  # Very light reduction within dormant season
+                print(f"DEBUG: Applying very light dormant season filter (factor: {seasonal_factor})")
                 
             elif before_month in monsoon_months and after_month in monsoon_months:
-                seasonal_factor = 0.8  # Minimal reduction within monsoon season
+                seasonal_factor = 0.95  # Minimal reduction within monsoon season
                 print(f"DEBUG: Applying minimal monsoon season filter (factor: {seasonal_factor})")
                 
             elif before_month in spring_months and after_month in spring_months:
-                seasonal_factor = 0.8  # Minimal reduction within spring growth season
+                seasonal_factor = 0.95  # Minimal reduction within spring growth season
                 print(f"DEBUG: Applying minimal spring season filter (factor: {seasonal_factor})")
             
             # Additional balanced filtering for specific problematic month combinations
@@ -1070,22 +1070,22 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
                     print(f"DEBUG: Average score for smart filtering: {avg_score}")
                     
                     if avg_score > 0.6:  # Strong signal - likely real change
-                        seasonal_factor = 0.8  # Minimal filtering to preserve real signals
+                        seasonal_factor = 0.9  # Minimal filtering to preserve real signals
                         print(f"DEBUG: Strong signal detected ({avg_score:.3f}), applying minimal seasonal filter (factor: {seasonal_factor})")
                     elif avg_score > 0.3:  # Medium signal
-                        seasonal_factor = 0.5  # Moderate filtering
-                        print(f"DEBUG: Medium signal detected ({avg_score:.3f}), applying moderate seasonal filter (factor: {seasonal_factor})")
+                        seasonal_factor = 0.7  # Light filtering
+                        print(f"DEBUG: Medium signal detected ({avg_score:.3f}), applying light seasonal filter (factor: {seasonal_factor})")
                     else:  # Weak signal - likely false positive
-                        seasonal_factor = 0.2  # More aggressive filtering for weak signals
-                        print(f"DEBUG: Weak signal detected ({avg_score:.3f}), applying stronger seasonal filter (factor: {seasonal_factor})")
+                        seasonal_factor = 0.5  # Moderate filtering for weak signals
+                        print(f"DEBUG: Weak signal detected ({avg_score:.3f}), applying moderate seasonal filter (factor: {seasonal_factor})")
                 except:
-                    # Fallback to balanced approach if stats fail
-                    seasonal_factor = 0.5
-                    print(f"DEBUG: Could not get signal strength, applying balanced filter (factor: {seasonal_factor})")
+                    # Fallback to lighter approach if stats fail
+                    seasonal_factor = 0.7  # Lighter filtering
+                    print(f"DEBUG: Could not get signal strength, applying light filter (factor: {seasonal_factor})")
             else:
-                # Default balanced filtering for other combinations
-                seasonal_factor = min(seasonal_factor, 0.7)
-                print(f"DEBUG: Applying balanced filter for month combination (factor: {seasonal_factor})")
+                # Default lighter filtering for other combinations
+                seasonal_factor = min(seasonal_factor, 0.85)  # Much lighter
+                print(f"DEBUG: Applying light filter for month combination (factor: {seasonal_factor})")
             
             # Additional filtering for other problematic month combinations
             # Use moderate, research-based filtering factors
@@ -1107,14 +1107,14 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
                     avg_score = avg_score or 0
                     
                     if avg_score > 0.5:  # Strong signal
-                        seasonal_factor = min(seasonal_factor, 0.8)
-                        print(f"DEBUG: Strong signal in problematic period ({avg_score:.3f}), applying light seasonal filter (factor: {seasonal_factor})")
+                        seasonal_factor = min(seasonal_factor, 0.9)  # Very light filtering
+                        print(f"DEBUG: Strong signal in problematic period ({avg_score:.3f}), applying very light seasonal filter (factor: {seasonal_factor})")
                     else:  # Weak signal
-                        seasonal_factor = min(seasonal_factor, 0.4)
-                        print(f"DEBUG: Weak signal in problematic period ({avg_score:.3f}), applying moderate seasonal filter (factor: {seasonal_factor})")
+                        seasonal_factor = min(seasonal_factor, 0.7)  # Light filtering
+                        print(f"DEBUG: Weak signal in problematic period ({avg_score:.3f}), applying light seasonal filter (factor: {seasonal_factor})")
                 except:
-                    seasonal_factor = min(seasonal_factor, 0.6)  # Balanced fallback
-                    print(f"DEBUG: Could not assess signal strength, applying balanced filter (factor: {seasonal_factor})")
+                    seasonal_factor = min(seasonal_factor, 0.8)  # Light fallback
+                    print(f"DEBUG: Could not assess signal strength, applying light filter (factor: {seasonal_factor})")
             
             # Apply seasonal adjustment
             adjusted_score = score_image.multiply(seasonal_factor)
@@ -1136,7 +1136,7 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
         }
     
     def filter_false_positives(self, change_image, aoi_geometry):
-        """BALANCED post-processing false positive filtering for optimal detection performance"""
+        """OPTIMIZED post-processing false positive filtering for optimal detection performance"""
         # Apply morphological operations to remove small, isolated changes
         # These are often noise or small clearings, not systematic deforestation
         
@@ -1150,35 +1150,35 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
         except:
             score_band = 'deforestation_score'
         
-        # First create a binary mask from the score (BALANCED threshold)
-        # Use moderate confidence threshold to balance detection and false positives
-        binary_mask = change_image.select(score_band).gte(0.3)  # Balanced threshold
+        # First create a binary mask from the score (LIGHTER threshold)
+        # Use lower confidence threshold for better detection sensitivity
+        binary_mask = change_image.select(score_band).gte(0.15)  # Lower threshold for sensitivity
         
-        # Remove isolated pixels (more aggressive - require larger connected areas)
-        kernel = ee.Kernel.square(radius=2)  # 5x5 kernel instead of 3x3
+        # Remove isolated pixels (less aggressive - allow smaller connected areas)
+        kernel = ee.Kernel.square(radius=1)  # 3x3 kernel - less aggressive
         
-        # Opening operation (erosion followed by dilation) on binary mask - more aggressive
-        eroded = binary_mask.focal_min(kernel=kernel, iterations=2)  # 2 iterations instead of 1
-        opened = eroded.focal_max(kernel=kernel, iterations=2)
+        # Opening operation (erosion followed by dilation) on binary mask - lighter
+        eroded = binary_mask.focal_min(kernel=kernel, iterations=1)  # 1 iteration
+        opened = eroded.focal_max(kernel=kernel, iterations=1)
         
-        # Only keep changes larger than minimum area (much more aggressive)
-        min_area_pixels = 25  # Minimum 25 pixels (roughly 2500 sq meters) instead of 9
-        connected_pixels = opened.connectedPixelCount(maxSize=512)  # Increased search area
+        # Only keep changes larger than minimum area (less aggressive)
+        min_area_pixels = 9  # Minimum 9 pixels (roughly 900 sq meters) - much smaller minimum
+        connected_pixels = opened.connectedPixelCount(maxSize=256)  # Smaller search area for efficiency
         size_filtered_mask = connected_pixels.gte(min_area_pixels)
         
-        # Additional edge filtering - remove changes too close to boundaries
+        # Lighter edge filtering - remove changes too close to boundaries
         # This helps eliminate edge effects that are common in seasonal variation
-        buffered_aoi = aoi_geometry.buffer(-60)  # 60m buffer inward
+        buffered_aoi = aoi_geometry.buffer(-30)  # 30m buffer inward (less aggressive)
         edge_mask = ee.Image.constant(1).clip(buffered_aoi).mask()
         
         # Combine size and edge filters
         combined_mask = size_filtered_mask.And(edge_mask)
         
-        # Apply the VERY AGGRESSIVE filter to the original score
+        # Apply the LIGHTER filter to the original score
         size_filtered_score = change_image.select(score_band).updateMask(combined_mask)
         
-        # Final aggressive threshold - only keep very high confidence detections
-        final_threshold = 0.7  # Very high threshold for final output
+        # Final lighter threshold - keep more detections
+        final_threshold = 0.3  # Much lower threshold for final output
         final_mask = size_filtered_score.gte(final_threshold)
         final_filtered_score = size_filtered_score.updateMask(final_mask)
         
