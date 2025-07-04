@@ -85,3 +85,5 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+test_problem_cases.py
+test_rebalanced_filtering.py
