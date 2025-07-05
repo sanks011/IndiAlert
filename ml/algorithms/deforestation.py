@@ -858,34 +858,54 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
         return spectral_signature.multiply(1.0)
     
     def _vegetation_baseline_filter(self, before_indices):
-        """Enhanced baseline filter with balanced criteria for meaningful vegetation"""
-        print("DEBUG: Applying enhanced vegetation baseline filter...")
+        """RESEARCH-OPTIMIZED baseline filter for detecting meaningful vegetation changes"""
+        print("DEBUG: Applying research-optimized vegetation baseline filter...")
         
-        # Balanced baseline to detect meaningful vegetation while reducing false positives - OPTIMIZED
-        # Allow detection of degraded forests and sparse vegetation but filter obvious non-vegetation
-        ndvi_threshold = 0.08   # Lower threshold for more sensitive detection
-        ndmi_threshold = -0.1   # More lenient for dry areas
+        # Based on research: include degraded forests and sparse vegetation that can still represent meaningful loss
+        # Balance between sensitivity (catching degraded forests) and specificity (avoiding bare areas)
         
-        # Method 1: Meaningful vegetation (NDVI > 0.15)
-        meaningful_vegetation = before_indices.select('NDVI').gt(ndvi_threshold)
+        # Multi-criteria approach for better detection of various vegetation types
+        ndvi_threshold = 0.1    # Lower for degraded forests and sparse vegetation
+        evi_threshold = 0.05    # More sensitive to chlorophyll activity
+        ndmi_threshold = -0.15  # More inclusive for dry areas
         
-        # Method 2: Forest-like characteristics (more permissive)
-        forest_like_evi = before_indices.select('EVI').gt(0.08)
-        forest_like_nbr = before_indices.select('NBR').gt(0.05)
+        # Method 1: Basic vegetation presence (inclusive for degraded areas)
+        basic_vegetation = before_indices.select('NDVI').gt(ndvi_threshold)
         
-        # Method 3: Exclude clearly non-vegetated areas
-        not_water = before_indices.select('NDVI').gt(-0.4)  # Water exclusion
-        not_bare_soil = before_indices.select('NDMI').gt(-0.25)  # Bare soil exclusion
-        has_some_moisture = before_indices.select('NDMI').gt(ndmi_threshold)  # Some moisture
+        # Method 2: Active vegetation (photosynthetic activity)
+        active_vegetation = before_indices.select('EVI').gt(evi_threshold)
         
-        # Combine methods: require meaningful vegetation AND some forest characteristics
-        # Use OR logic to be more inclusive while still filtering obvious non-vegetation
-        had_meaningful_vegetation = meaningful_vegetation.And(
-            forest_like_evi.Or(forest_like_nbr)
-        ).And(not_water).And(not_bare_soil).And(has_some_moisture)
+        # Method 3: Vegetation with some moisture content
+        moist_vegetation = before_indices.select('NDMI').gt(ndmi_threshold)
         
-        print("DEBUG: Completed enhanced vegetation baseline filter with balanced criteria")
-        return had_meaningful_vegetation
+        # Method 4: Exclude clearly non-vegetated areas (water, bare rock, urban)
+        not_water = before_indices.select('NDVI').gt(-0.3)  # Exclude water bodies
+        not_bare_rock = before_indices.select('NDVI').gt(-0.1)  # Exclude bare rock/urban
+        not_extremely_dry = before_indices.select('NDMI').gt(-0.4)  # Exclude extremely dry areas
+        
+        # Method 5: Forest-like characteristics (broader definition)
+        # Include degraded and sparse forests that still represent meaningful ecosystems
+        forest_like_nbr = before_indices.select('NBR').gt(0.0)  # Very inclusive for forests
+        forest_like_structure = before_indices.select('NDVI').gt(0.15).Or(  # Moderate vegetation OR
+            before_indices.select('EVI').gt(0.1).And(before_indices.select('NBR').gt(0.05))  # Active vegetation with some structure
+        )
+        
+        # Combine criteria: Must have basic vegetation AND (active vegetation OR moisture OR forest structure)
+        # AND must not be clearly non-vegetated
+        meaningful_vegetation = basic_vegetation.And(
+            active_vegetation.Or(moist_vegetation).Or(forest_like_structure)
+        ).And(not_water).And(not_bare_rock).And(not_extremely_dry)
+        
+        # Additional check: allow areas with moderate NDVI but strong NBR (forest areas)
+        forest_priority_areas = before_indices.select('NDVI').gt(0.08).And(
+            before_indices.select('NBR').gt(0.1)
+        )
+        
+        # Final combination: standard meaningful vegetation OR forest priority areas
+        final_baseline = meaningful_vegetation.Or(forest_priority_areas)
+        
+        print("DEBUG: Completed research-optimized vegetation baseline filter with enhanced sensitivity")
+        return final_baseline
     
 
     def _apply_seasonal_filtering(self, score_image, before_indices, after_indices, aoi_geometry):
@@ -913,62 +933,51 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
             evi_after = after_indices.select('EVI')
             evi_change = evi_before.subtract(evi_after)
             
-            # VERY AGGRESSIVE filtering approach - filter any potential false positives
+            # SMART RESEARCH-BASED filtering approach - preserve strong signals, filter weak false positives
             
-            # 1. Agricultural/crop harvest patterns (more aggressive)
-            # Filter if ANY of these conditions suggest agriculture/crops:
-            # - Low initial vegetation (crops, not forest)
-            # - Moderate to complete vegetation removal
-            # - Rapid change typical of harvest/management
-            potential_agriculture = ndvi_before.lt(0.6).And(        # Broader range for crops
-                ndvi_after.lt(0.25)                                # More generous removal threshold  
-            ).And(ndvi_change.gt(0.4))                             # Lower change threshold
+            # 1. Agricultural/crop harvest patterns - be smarter about detection
+            # Real agriculture typically has regular patterns and lower initial vegetation
+            potential_agriculture = ndvi_before.lt(0.4).And(        # Focus on clearly agricultural areas
+                ndvi_after.lt(0.15)                                # Complete removal typical of harvest
+            ).And(ndvi_change.gt(0.25))                             # Significant change
             
-            # 2. Seasonal deciduous/phenological patterns (very aggressive)
-            # Filter natural seasonal variation that could be deciduous forests or phenology
-            # - Moderate initial vegetation (deciduous forest range)
-            # - Partial vegetation loss (not complete clearing)
-            # - Consistent change across indices
-            seasonal_deciduous = ndvi_before.gt(0.3).And(ndvi_before.lt(0.8)).And(
-                ndvi_after.gt(0.1).And(ndvi_after.lt(0.5))                          # Partial loss
-            ).And(ndvi_change.gt(0.2).And(ndvi_change.lt(0.7))                     # Moderate change
-            ).And(evi_change.gt(0.1).And(evi_change.lt(0.5)))                      # Consistent across indices
+            # 2. Seasonal deciduous/phenological patterns - more nuanced detection
+            # Look for partial, gradual changes typical of natural cycles
+            seasonal_deciduous = ndvi_before.gt(0.3).And(ndvi_before.lt(0.7)).And(
+                ndvi_after.gt(0.2).And(ndvi_after.lt(0.4))          # Partial loss, some vegetation remains
+            ).And(ndvi_change.gt(0.2).And(ndvi_change.lt(0.5))     # Moderate change, not extreme
+            ).And(evi_change.gt(0.1).And(evi_change.lt(0.3)))      # Consistent but moderate across indices
             
-            # 3. Gradual/natural variation patterns
-            # Filter changes that are too gradual to be mechanical deforestation
-            # Real deforestation is usually rapid and complete
-            gradual_change = ndvi_change.gt(0.15).And(ndvi_change.lt(0.5)).And(
-                evi_change.gt(0.1).And(evi_change.lt(0.4))                          # Consistent but not extreme
-            ).And(ndvi_before.gt(0.3))                                             # Had reasonable vegetation
+            # 3. Signal strength based filtering - preserve strong deforestation signals
+            strong_signal = score_image.gt(0.7)  # High confidence detections
+            moderate_signal = score_image.gt(0.4).And(score_image.lte(0.7))
+            weak_signal = score_image.lte(0.4)
             
-            # 4. Inconsistent change patterns (sensor/atmospheric artifacts)
-            # Filter changes where NDVI and EVI don't agree (likely artifacts)
-            inconsistent_change = ndvi_change.gt(0.3).And(evi_change.lt(0.1)).Or(  # NDVI drops but EVI doesn't
-                evi_change.gt(0.3).And(ndvi_change.lt(0.1))                       # EVI drops but NDVI doesn't
+            # 4. Inconsistent change patterns (likely artifacts)
+            inconsistent_change = ndvi_change.gt(0.4).And(evi_change.lt(0.15)).Or(
+                evi_change.gt(0.4).And(ndvi_change.lt(0.15))
             )
             
-            # 5. Water/cloud interference patterns (enhanced)
-            # Areas that show impossible vegetation values
-            impossible_change = ndvi_before.lt(-0.2).And(ndvi_after.gt(0.2)).Or(
-                ndvi_before.gt(0.9).And(ndvi_after.gt(0.8))                        # Unrealistically high values
+            # 5. Combine false positive indicators more selectively
+            likely_false_positive = potential_agriculture.Or(
+                seasonal_deciduous.And(weak_signal)  # Only filter seasonal patterns for weak signals
+            ).Or(inconsistent_change)
+            
+            # Apply GRADUATED filtering based on signal strength and false positive likelihood
+            # Strong signals: minimal filtering
+            # Moderate signals: light filtering for obvious false positives
+            # Weak signals: stronger filtering for potential false positives
+            
+            strong_factor = likely_false_positive.multiply(-0.1).add(1.0).clamp(0.9, 1.0)  # Minimal filtering
+            moderate_factor = likely_false_positive.multiply(-0.2).add(1.0).clamp(0.8, 1.0)  # Light filtering  
+            weak_factor = likely_false_positive.multiply(-0.4).add(1.0).clamp(0.6, 1.0)  # Moderate filtering
+            
+            # Apply graduated filtering
+            filtered_score = strong_signal.multiply(score_image.multiply(strong_factor)).add(
+                moderate_signal.multiply(score_image.multiply(moderate_factor))
+            ).add(
+                weak_signal.multiply(score_image.multiply(weak_factor))
             )
-            
-            # 6. Edge/boundary effects
-            # Filter very small isolated changes that are likely edge effects
-            # This will be handled later in morphological filtering, but flag here too
-            # (This is a placeholder - the actual edge filtering is done in filter_false_positives)
-            
-            # Combine ALL potential false positive indicators (VERY AGGRESSIVE)
-            potential_false_positive = potential_agriculture.Or(seasonal_deciduous).Or(
-                gradual_change).Or(inconsistent_change).Or(impossible_change)
-            
-            # Apply LIGHTER filtering to preserve real signals while reducing false positives
-            # Use research-based moderate reduction factors for seasonal patterns
-            # Preserve strong signals that indicate real deforestation
-            balanced_factor = potential_false_positive.multiply(-0.3).add(1.0).clamp(0.6, 1.0)  # Much lighter filtering
-            
-            # Apply the balanced seasonal filter
-            filtered_score = score_image.multiply(balanced_factor)
             
             # Debug: Sample the filtering effects
             try:
@@ -1136,9 +1145,9 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
         }
     
     def filter_false_positives(self, change_image, aoi_geometry):
-        """OPTIMIZED post-processing false positive filtering for optimal detection performance"""
-        # Apply morphological operations to remove small, isolated changes
-        # These are often noise or small clearings, not systematic deforestation
+        """RESEARCH-OPTIMIZED post-processing false positive filtering for maximum detection performance"""
+        # Apply intelligent morphological operations to remove noise while preserving real deforestation
+        # Based on research showing that real deforestation has different spatial patterns than false positives
         
         # Use the filtered score for further processing
         score_band = 'filtered_deforestation_score'
@@ -1150,39 +1159,71 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
         except:
             score_band = 'deforestation_score'
         
-        # First create a binary mask from the score (LIGHTER threshold)
-        # Use lower confidence threshold for better detection sensitivity
-        binary_mask = change_image.select(score_band).gte(0.15)  # Lower threshold for sensitivity
+        # SMART multi-threshold approach based on signal strength
+        # Strong signals need minimal filtering, weak signals need more filtering
+        strong_threshold = 0.7   # High confidence detections
+        moderate_threshold = 0.4  # Medium confidence detections  
+        weak_threshold = 0.15    # Low confidence detections
         
-        # Remove isolated pixels (less aggressive - allow smaller connected areas)
-        kernel = ee.Kernel.square(radius=1)  # 3x3 kernel - less aggressive
+        # Create separate masks for different confidence levels
+        strong_mask = change_image.select(score_band).gte(strong_threshold)
+        moderate_mask = change_image.select(score_band).gte(moderate_threshold).And(
+            change_image.select(score_band).lt(strong_threshold)
+        )
+        weak_mask = change_image.select(score_band).gte(weak_threshold).And(
+            change_image.select(score_band).lt(moderate_threshold)
+        )
         
-        # Opening operation (erosion followed by dilation) on binary mask - lighter
-        eroded = binary_mask.focal_min(kernel=kernel, iterations=1)  # 1 iteration
-        opened = eroded.focal_max(kernel=kernel, iterations=1)
+        # Apply graduated morphological filtering
+        kernel_small = ee.Kernel.square(radius=1)  # 3x3 kernel - minimal filtering
+        kernel_medium = ee.Kernel.square(radius=1, units='pixels')  # Still small for moderate signals
         
-        # Only keep changes larger than minimum area (less aggressive)
-        min_area_pixels = 9  # Minimum 9 pixels (roughly 900 sq meters) - much smaller minimum
-        connected_pixels = opened.connectedPixelCount(maxSize=256)  # Smaller search area for efficiency
-        size_filtered_mask = connected_pixels.gte(min_area_pixels)
+        # Strong signals: minimal morphological operations - preserve almost everything
+        strong_processed = strong_mask.focal_min(kernel=kernel_small, iterations=1).focal_max(kernel=kernel_small, iterations=1)
         
-        # Lighter edge filtering - remove changes too close to boundaries
-        # This helps eliminate edge effects that are common in seasonal variation
-        buffered_aoi = aoi_geometry.buffer(-30)  # 30m buffer inward (less aggressive)
+        # Moderate signals: light morphological operations  
+        moderate_processed = moderate_mask.focal_min(kernel=kernel_small, iterations=1).focal_max(kernel=kernel_small, iterations=1)
+        
+        # Weak signals: more aggressive filtering but still preserve connected areas
+        weak_processed = weak_mask.focal_min(kernel=kernel_small, iterations=1).focal_max(kernel=kernel_small, iterations=2)
+        
+        # Size filtering - remove very small isolated pixels but keep small connected areas
+        # Research shows real deforestation often occurs in small patches in early stages
+        
+        # Strong signals: no size filtering - preserve all detections
+        strong_connected = strong_processed.connectedPixelCount(maxSize=256)
+        strong_size_filtered = strong_processed  # No size filtering for strong signals
+        
+        # Moderate signals: minimal size filtering
+        moderate_connected = moderate_processed.connectedPixelCount(maxSize=256)
+        moderate_size_filtered = moderate_processed.updateMask(moderate_connected.gte(4))  # Min 4 pixels
+        
+        # Weak signals: moderate size filtering  
+        weak_connected = weak_processed.connectedPixelCount(maxSize=256)
+        weak_size_filtered = weak_processed.updateMask(weak_connected.gte(6))  # Min 6 pixels
+        
+        # Edge filtering - very conservative, only remove extreme edge effects
+        # Use minimal buffer to preserve detections near boundaries
+        buffered_aoi = aoi_geometry.buffer(-15)  # Only 15m buffer (was 30m)
         edge_mask = ee.Image.constant(1).clip(buffered_aoi).mask()
         
-        # Combine size and edge filters
-        combined_mask = size_filtered_mask.And(edge_mask)
+        # Apply edge filtering only to weak signals, preserve strong and moderate
+        strong_final = strong_size_filtered
+        moderate_final = moderate_size_filtered.updateMask(edge_mask.Or(ee.Image.constant(1)))  # Allow edge detections
+        weak_final = weak_size_filtered.updateMask(edge_mask)
         
-        # Apply the LIGHTER filter to the original score
-        size_filtered_score = change_image.select(score_band).updateMask(combined_mask)
+        # Combine all confidence levels with their respective thresholds
+        combined_mask = strong_final.Or(moderate_final).Or(weak_final)
         
-        # Final lighter threshold - keep more detections
-        final_threshold = 0.3  # Much lower threshold for final output
-        final_mask = size_filtered_score.gte(final_threshold)
-        final_filtered_score = size_filtered_score.updateMask(final_mask)
+        # Apply the smart filter to the original score, preserving intensity gradation
+        smart_filtered_score = change_image.select(score_band).updateMask(combined_mask)
         
-        # Update the change image with the filtered result
+        # VERY light final threshold - keep more detections
+        final_threshold = 0.2  # Much lower threshold for final output
+        final_mask = smart_filtered_score.gte(final_threshold)
+        final_filtered_score = smart_filtered_score.updateMask(final_mask)
+        
+        # Update the change image with the smartly filtered result
         return change_image.addBands(final_filtered_score.rename('final_deforestation_score'), None, True)
     
     def _enhanced_temporal_filtering(self, before_indices, after_indices, aoi_geometry):
@@ -1232,10 +1273,19 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
             # Low texture might indicate agricultural areas or non-forest
             low_texture = entropy.lt(1.5).Or(variance.lt(0.01))
             
-            # 4. Texture filter score (higher = more likely false positive)
-            texture_score = low_texture.multiply(0.7)
+            # 4. Smart texture-based false positive scoring
+            # Research shows agricultural areas have lower texture entropy
+            # But be more conservative to preserve real deforestation detection
+            agricultural_indicator = low_texture.multiply(0.5)  # Reduced from 0.7
             
-            return texture_score.clamp(0, 1)
+            # 5. Add texture consistency check - real forests have varied texture
+            texture_variance = variance.gt(0.02)  # Higher variance = more forest-like
+            forest_texture_bonus = texture_variance.multiply(0.2)
+            
+            # Combined texture score (lower = more likely real deforestation)
+            texture_score = agricultural_indicator.subtract(forest_texture_bonus).clamp(0, 1)
+            
+            return texture_score
             
         except Exception as e:
             print(f"DEBUG: Enhanced texture filtering failed: {e}")
@@ -1331,6 +1381,9 @@ class DeforestationDetection(ChangeDetectionAlgorithm):
             sufficient_connectivity = connected.gt(5)  # At least 5 connected pixels
             
             # 4. Spatial consistency score
+            spatial_score = scale_consistency.And(sufficient_connectivity).multiply(0.7)
+            
+            return spatial_score.clamp(0, 1)
             spatial_score = scale_consistency.And(sufficient_connectivity).multiply(0.7)
             
             return spatial_score.clamp(0, 1)
